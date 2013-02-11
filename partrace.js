@@ -1,0 +1,439 @@
+self.console = self.console || {
+  info: function () {},
+  log: function () {},
+  debug: function () {},
+  warn: function () {},
+  error: function () {}
+};
+
+Partrace=Class.extend({
+  init:function(canvas){
+    this.element = document.getElementById(canvas);
+    this.width = this.element.width;
+    this.height = this.element.height;
+    this.ctx = this.element.getContext("2d");
+    this.colorBuffer = this.ctx.createImageData(this.width,this.height); 
+    this.zBuffer = this.ctx.createImageData(this.width,this.height);
+    this.camera = new Partrace.Camera(this);
+    this.render();
+  },
+  createBuffer:function(width,height){
+    var buffer = document.createElement('canvas');
+    buffer.width=width;
+    buffer.height=height;
+    return buffer.getContext("2d");
+  },
+  setPixel:function(data,x,y,r,g,b,a){
+    var index = (x + y * this.width) * 4;
+    data.data[index+0] = r;
+    data.data[index+1] = g;
+    data.data[index+2] = b;
+    data.data[index+3] = a;
+    return this;
+  },
+  getPixel:function(data,x,y){
+    var index = (x + y * this.width) * 4;
+    var p=[];
+    p[0]=data.data[index+0];
+    p[1]=data.data[index+1];
+    p[2]=data.data[index+2];
+    p[3]=data.data[index+3];    
+    return p;
+  },
+  clearBuffer:function(buffer,r,g,b,a){
+    var width=this.width;
+    var height=this.height;
+    var x=width;
+    var y=height;
+    if (r==undefined){
+      r=0;
+      g=0;
+      b=0;
+      a=255;
+    }else if (a==undefined){
+      a=255;
+    }
+    while (y--){
+      while (x--){
+        this.setPixel(buffer,x,y,r,g,b,a);
+      }
+      x=width;
+    }  
+    return this;
+  },
+  copyBufferToScreen:function(buffer){
+    this.ctx.putImageData( buffer, 0, 0 );  
+    return this;
+  },
+  copyColorToScreen:function(){
+    this.copyBufferToScreen(this.colorBuffer);
+    return this;
+  },
+  copyZToScreen:function(){
+    this.copyBufferToScreen(this.zBuffer);
+    return this;
+  },
+  render:function(){
+    var width=this.width;
+    var height=this.height;
+    var x=width;
+    var y=height;
+    var cb=this.colorBuffer;
+    this.clearBuffer(cb);
+    this.copyColorToScreen();
+    var c_color=[0,0,0,255];
+    var aa_color=[0,0,0,255];
+    var camera=this.camera;
+    camera.setup(width,height);
+    var ray=new Partrace.Ray('screen');
+    var nv=vec4.create();
+    while (y--){
+      while (x--){
+        camera.makeCameraRay(x,y,ray,nv);
+        this.setPixel(cb,x,y,c_color[0],c_color[1],c_color[2],c_color[3]);
+      }
+      x=width;
+      this.doProgress(height-y);
+      this.copyColorToScreen();
+    }
+//    this.copyColorToScreen();    
+  },
+  doProgress:function(y){
+    var p=(y/this.height*100).toFixed(1);
+    //console.log(p);
+  },
+  test:function(){  
+    var ctx=this.ctx;
+    ctx.fillStyle="#FF0000";
+    ctx.strokeStyle="#FF0000";
+  //  ctx.fillRect(0,0,150,75);
+    ctx.beginPath();    
+    ctx.arc(95,50,40,0,2*Math.PI);
+    ctx.stroke();    
+    this.clearBuffer(this.colorBuffer);
+    this.copyColorToScreen();
+    for (var i = 0; i<300; i++){
+      this.setPixel(this.colorBuffer,i, i, 0,0,255,255 );
+    }
+    this.copyColorToScreen();
+    console.log(this.getPixel(this.colorBuffer,0,0));
+  }  
+});
+
+var BaseObj = Class.extend({
+  init: function(){
+    this.parent=null;
+    this.right=vec4.create();
+    this.left=vec4.create();
+    this.up=vec4.create();
+    this.direction=vec4.create();
+    this.position=vec4.create();
+    this.scale=vec4.create();
+    this.rotation=vec4.create();
+    this.localMatrix=mat4.create();
+
+    vec4.copy(this.up,vec4.YVector);
+    vec4.copy(this.direction,vec4.ZVector);
+    vec4.copy(this.position,vec4.NullPoint);
+    vec4.copy(this.scale,vec4.XYZVector);  
+    vec4.copy(this.rotation,vec4.NullPoint);  
+    mat4.identity(this.localMatrix);
+    this.getLeft();
+    this.getRight();
+  },
+  pointTo:function(target){
+    var absDir=vec4.create();
+    vec4.subtract(absDir, target, this.absolutePosition());
+    vec4.normalize(absDir,absDir);
+    var absRight=vec4.create();
+    vec4.cross(absRight,absDir, vec4.YVector);
+    vec4.normalize(absRight,absRight);
+    var absUp=vec4.create();
+    vec4.cross(absUp, absRight, absDir);
+    // convert absolute to local and adjust object   
+    if (this.parent) {      
+      vec4.copy(this.direction,this.parent.absoluteToLocal(absDir));
+      vec4.copy(this.up,this.parent.absoluteToLocal(absUp));
+    } else {
+      vec4.copy(this.direction,absDir);
+      vec4.copy(this.up,absUp);
+    }
+    this.rebuildMatrix();
+  },
+  absolutePosition:function(out){
+    if (out==undefined) out = vec4.create();
+    vec4.copy(out,this.position);
+    return out;
+  },
+  getLeft:function(){
+    if (!this.left) this.left=vec4.create();
+    vec4.cross(this.left,this.up, this.direction);
+    return this.left;
+  },
+  getRight:function(){
+    if (!this.right) this.right=vec4.create();
+    vec4.cross(this.right,this.direction,this.up);
+    return this.right;
+  },
+  rebuildMatrix:function(){
+    var v=vec4.create();
+    vec4.scale(v,this.getLeft(),this.scale[0]);
+    mat4.setX(this.localMatrix, v);
+    vec4.scale(v,this.up, this.scale[1]);
+    mat4.setY(this.localMatrix, v);
+    vec4.scale(v,this.direction, this.scale[2]);
+    mat4.setZ(this.localMatrix, v);
+    mat4.setW(this.localMatrix, this.position);
+  },
+  absoluteToLocal:function(out,v){
+    if (out==undefined) out=vec4.create();
+    vec4.transformMat4(out,v,this.invAbsoluteMatrix);
+    return out;
+  },
+  localToAbsolute:function(out,v){
+    if (out==undefined) out=vec4.create();
+    vec4.transformMat4(out,v,this.absoluteMatrix);
+    return out;
+  },
+  getLocalMatrix:function(){
+  // this.rebuildMatrix();
+    return this.localMatrix;
+  },
+  setMatrix:function(mat){
+    mat4.copy(this.localMatrix,mat);
+
+    mat4.getY(this.up,this.localMatrix);
+    mat4.getZ(this.direction,this.localMatrix);
+    mat4.getW(this.position,this.localMatrix);
+
+    vec4.set(this.scale,vec4.length(mat4.getX(undefined,this.localMatrix),vec4.length(this.up), vec4.length(this.direction),1));
+
+    vec4.normalize(this.up,this.up);
+    vec4.normalize(this.direction,this.direction);
+    this.getRight();
+    this.getLeft();
+    return this;
+  },
+  getAbsolutePosition:function(){
+    return mat4.getW(undefined,this.absoluteMatrix);
+  },  
+  setPosition:function(pos){
+    vec4.copy(this.positio,pos);
+    this.rebuildMatrix();
+    return this;
+  },  
+  setAbsolutePosition:function(pos){
+    if (this.parent) {
+      this.setPosition(this.parent.absoluteToLocal(pos));
+    }else{
+      this.setPosition(pos);
+    }
+    return this;
+  },  
+  getParent:function(){
+    return this.parent;
+  },
+  setParent:function(parent){
+    if (this.parent!==parent) this.parent=parent;
+    return this;
+  },
+  getAbsoluteDirection:function(){
+    var result=mat4.getZ(undefined,this.absoluteMatrix);
+    vec4.normalize(result,result);
+    return result;
+  },
+  setDirection:function(dir){
+    if (!vec4.isNull(dir)) {
+      vec4.copy(this.direction,dir);
+      this.rebuildMatrix();
+    }
+    return this;
+  },
+  setAbsoluteDirection:function(dir){
+    if (this.parent){
+      this.setDirection(this.parent.absoluteToLocal(dir));
+    } else {
+      this.setDirection(dir);
+    }
+    return this;
+  },  
+  getAbsoluteUp:function(){
+    var result=mat4.getY(this.absoluteMatrix);
+    vec4.normalize(result,result);
+    return result;
+  },
+  setUp:function(up){
+    if (!vec4.isNull(up)) {
+      vec4.copy(this.up,up);
+      this.rebuildMatrix();
+    }
+    return this;
+  },  
+  setAbsoluteUp:function(up){
+    if (this.parent) {
+      this.setUp(this.parent.absoluteToLocal(up));
+    } else {
+      this.setUp(up);
+    }
+    return this;
+  },
+  setScaling:function(scl){
+    vec4.copy(this.scaling,scl);
+    this.rebuildMatrix();
+    return this;
+  },
+  setRotation:function(rot){
+    vec4.copy(this.rotation,rot);
+    this.rebuildMatrix();
+    return this;
+  },
+  getAbsoluteMatrix:function(){
+  //  this.rebuildMatrix();
+    if (!this.absoluteMatrix) this.absoluteMatrix=mat4.create();
+    if (this.parent) {
+      mat4.multiply(this.localMatrix, this.parent.getAbsoluteMatrix(), this.localMatrix);
+    } else {
+      mat4.copy(this.absoluteMatrix,this.localMatrix);
+    }
+    return this.absoluteMatrix;
+  },
+  getInvAbsoluteMatrix:function(){
+    if (mat4.equals(this.scale, vec4.XYZVector)) {
+      if (!this.invAbsoluteMatrix) this.invAbsoluteMatrix=mat4.create();
+      if (this.parent){
+        mat4.multiply(this.invAbsoluteMatrix,this.parent.getInvAbsoluteMatrix(), mat4.anglePreservingMatrixInvert(this.localMatrix));
+      } else {
+        mat4.copy(this.invAbsoluteMatrix,mat4.anglePreservingMatrixInvert(this.localMatrix));
+      }
+    } else {
+      mat4.invert(this.invAbsoluteMatrix,this.getAbsoluteMatrix());
+    }
+    return this.invAbsoluteMatrix;
+  },
+  rotateAbsolute:function(rx, ry, rz){
+    var resMat=this.localMatrix;
+    var v = vec4.create();
+    var m = mat4.create();
+    if (rx!==0) {
+      vec4.set(v, this.absoluteToLocal(vec4.XVector));
+      mat4.multiply(resMat,resMat,mat4.createRotate(m, v, -Math.DegToRad(rx)));
+    }
+    if (ry!==0) {
+      vec4.set(v, this.absoluteToLocal(vec4.YVector));
+      mat4.multiply(resMat,resMat,mat4.createRotate(m, v, -Math.DegToRad(ry)));
+    }
+    if (rz!==0) {
+      vec4.set(v, this.absoluteToLocal(vec4.ZVector));
+      mat4.multiply(resMat,resMat,mat4.createRotate(m, v, -Math.DegToRad(rz)));
+    }
+    return this;
+  },
+  rotateAbsolute:function(axis,angle){
+    if (angle!==0) {
+      var v = vec4.create();
+      vec4.set(v, this.absoluteToLocal(axis));
+      mat4.multiply(this.localMatrix,mat4.createRotate(undefined, v, Math.DegToRad(angle)), this.getLocalMatrix());
+      this.rebuildMatrix();
+    }
+    return this;
+  },
+  translate:function(tx, ty, tz){
+    if (ty==undefined){
+     vec4.add(this.position,this.position,tx);
+    }else{
+      vec4.add(this.position,this.position,vec4.fromValues(tx,ty,tz,0));
+    }
+    this.rebuildMatrix();
+    return this;
+  },
+  
+  normal:function(ray,ip){
+  },
+  intersect:function(ray,ip){
+  },  
+  uvw:function(ray,ip){
+  }    
+});
+
+Partrace.Camera=BaseObj.extend({
+  init: function(partrace){
+    this._super();
+    this.partrace=partrace;
+    
+    this.look=vec4.fromValues(0,0,-1,0);
+    this.fov=45;
+    this.aspectRatio=1;
+    this.width=partrace.width;
+    this.height=partrace.height;
+
+    this.focusBlurLevels=3;
+    this.focusDist=-0.5;
+    this.farFocusDist=0.75;      
+  },
+  makeCameraRay:function(x,y,ray,o){
+    ray.copy(this.defaultCameraRay);
+    var imPlaneUPos=this.vLeft  +(this.vRight-this.vLeft)  *((x+o[0])/this.width);
+    var imPlaneVPos=this.vBottom+(this.vTop  -this.vBottom)*((y+o[1])/this.height);
+//    r.d=VectorAdd(VectorScale(this.right,imPlaneUPos),VectorSubtract(VectorScale(this.up,imPlaneVPos),VectorNegate(this.direction)));
+    var d=[];
+    vec4.negate(d,this.direction);
+    var u=[];
+    vec4.scale(u,this.up,imPlaneVPos);
+    var v=[];
+    vec4.subtract(v,u,d);
+    var r=[];
+    vec4.scale(r,this.right,imPlaneUPos);
+    vec4.add(ray.d,r,v);
+    vec4.normalize(ray.d,ray.d);
+  },
+  setup:function(width,height){
+    this.width=width;
+    this.height=height;
+
+    this.pointTo(this.look);
+
+    this.aspectRatio=width/height;
+
+    this.vTop=   -Math.tan(Math.degToRad(this.fov/2));
+    this.vRight= -this.aspectRatio*this.vTop;
+    this.vBottom=-this.vTop;
+    this.vLeft=  -this.vRight;
+
+    this.defaultCameraRay=new Partrace.Ray('camera');
+    vec4.copy(this.defaultCameraRay.p,this.position);
+    vec4.copy(this.defaultCameraRay.d,this.direction);
+  }  
+});
+
+
+Partrace.Ray=BaseObj.extend({
+  init:function(type){
+    this.type = type||'unknown';
+    this.p=vec4.fromValues(0,0,0,1); // start position
+    this.d=vec4.fromValues(0,0,1,0); // direction
+    this.intensity=1; // used to track if ray has been fully absorbed by translucent objects
+    this.inside=false; // inside object?
+    this.io=1; // index of refraction
+    this.depth=0; // trace recursion depth
+  },
+  copy:function(r){
+    this.type=r.type;
+    vec4.copy(this.p,r.p);
+    vec4.copy(this.d,r.d);
+    this.intensity=r.intensity;
+    this.inside=r.inside;
+    this.io=r.io;
+    this.depth=r.depth;
+  },
+  clone:function(){
+    var r = new Partrace.Ray();
+    r.copy(this);
+    return r;
+  }  
+});
+
+var partrace=null;
+
+$(document).ready(function(){
+  partrace=new Partrace("canvas");
+});

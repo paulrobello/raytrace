@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PARTrace JS</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<link type="text/css" href="/css/themes/default/jquery-ui.css" rel="stylesheet" />
+<link type="text/css" href="/css/main.css" rel="stylesheet" />
+<script src="/js/jquery.min.js"></script>
+<script src="/js/gl-matrix/dist/gl-matrix.js"></script>
+<script src="/js/class.js"></script>
+
+<script src="/parmath.js"></script>
+<script src="/partrace.js"></script>
+<style>
+body {
+  overflow:hidden;
+  font-family: Monospace;  
+}
+canvas { 
+  border: 0px solid black;
+  background-color: #000;
+  z-index:1;
+  position:relative;  
+  width:640px;
+  height:480px;
+}
+</style>
+</head>
+<body>
+<canvas id="canvas" width="640" height="480"></canvas>
+</body>
+</html>
