@@ -1,8 +1,8 @@
 self.Math.degToRad = self.Math.degToRad || function(d){
-  return d/180*Math.PI;
+  return d*(Math.PI/180);
 };
 self.Math.radToDeg = self.Math.radToDeg || function(r){
-  return r/(180*Math.PI);
+  return r*(180/Math.PI);
 };
 
 self.Int32Array = self.Int32Array || Array;
@@ -49,7 +49,7 @@ vec4.NullPoint =vec4.fromValues(0,0,0,1);
 
 
 mat4.getX=function(out,mat){
-  if (out==undefined) {
+  if (out===undefined) {
     out=vec4.fromValues(mat[0],mat[1],mat[2],mat[3]);
   }else{
     vec4.set(out,mat[0],mat[1],mat[2],mat[3]);
@@ -57,7 +57,7 @@ mat4.getX=function(out,mat){
   return out;
 };
 mat4.getY=function(out,mat){
-  if (out==undefined) {
+  if (out===undefined) {
     out=vec4.fromValues(mat[4],mat[5],mat[6],mat[7]);
   }else{
     vec4.set(out,mat[4],mat[5],mat[6],mat[7]);
@@ -65,7 +65,7 @@ mat4.getY=function(out,mat){
   return out;
 };
 mat4.getZ=function(out,mat){
-  if (out==undefined) {
+  if (out===undefined) {
     out=vec4.fromValues(mat[8],mat[9],mat[10],mat[11]);
   }else{
     vec4.set(out,mat[8],mat[9],mat[10],mat[11]);
@@ -73,7 +73,7 @@ mat4.getZ=function(out,mat){
   return out;
 };
 mat4.getW=function(out,mat){
-  if (out==undefined) {
+  if (out===undefined) {
     out=vec4.fromValues(mat[12],mat[13],mat[14],mat[15]);
   }else{
     vec4.set(out,mat[12],mat[13],mat[14],mat[15]);
@@ -82,7 +82,7 @@ mat4.getW=function(out,mat){
 };
 
 mat4.setX=function(out,v){
-  if (out==undefined) out=mat4.create();
+  if (out===undefined) out=mat4.create();
   out[0]=v[0];
   out[1]=v[1];
   out[2]=v[2];
@@ -90,7 +90,7 @@ mat4.setX=function(out,v){
   return out;
 };
 mat4.setY=function(out,v){
-  if (out==undefined) out=mat4.create();
+  if (out===undefined) out=mat4.create();
   out[4]=v[0];
   out[5]=v[1];
   out[6]=v[2];
@@ -98,7 +98,7 @@ mat4.setY=function(out,v){
   return out;
 };
 mat4.setZ=function(out,v){
-  if (out==undefined) out=mat4.create();
+  if (out===undefined) out=mat4.create();
   out[8]=v[0];
   out[9]=v[1];
   out[10]=v[2];
@@ -106,7 +106,7 @@ mat4.setZ=function(out,v){
   return out;
 };
 mat4.setW=function(out,v){
-  if (out==undefined) out=mat4.create();
+  if (out===undefined) out=mat4.create();
   out[12]=v[0];
   out[13]=v[1];
   out[14]=v[2];
@@ -114,17 +114,14 @@ mat4.setW=function(out,v){
   return out;
 };
 
-mat4.createRotate = function (out, rad, axis) {
-  var s, c, t;
- 
-  if (Math.abs(len) < GLMAT_EPSILON) { return null; }
-     
+mat4.createRotate = function (out, rad, axis) {  
+  if (out===undefined) out = mat4.create();   
   vec4.normalize(axis,axis); 
+  var s, c, t;  
   s = Math.sin(rad);
   c = Math.cos(rad);
   t = 1 - c;
-  if (out==undefined) out = mat4.create();
-     
+       
   out[0]= (t * axis[0] * axis[0]) + c;
   out[1]= (t * axis[0] * axis[1]) - (axis[2] * s);
   out[2]= (t * axis[2] * axis[0]) + (axis[1] * s);
@@ -150,10 +147,10 @@ mat4.createRotate = function (out, rad, axis) {
 
 mat4.equals=function(a,b){
   return 
-    a[0]==b[0] && a[1]==b[1] && a[2]==b[2] && a[3]==b[3] &&
-    a[4]==b[4] && a[5]==b[5] && a[6]==b[6] && a[7]==b[7] &&
-    a[8]==b[8] && a[9]==b[9] && a[10]==b[10] && a[11]==b[11] &&
-    a[12]==b[12] && a[13]==b[13] && a[14]==b[14] && a[15]==b[15];
+    a[0]===b[0] && a[1]===b[1] && a[2]===b[2] && a[3]===b[3] &&
+    a[4]===b[4] && a[5]===b[5] && a[6]===b[6] && a[7]===b[7] &&
+    a[8]===b[8] && a[9]===b[9] && a[10]===b[10] && a[11]===b[11] &&
+    a[12]===b[12] && a[13]===b[13] && a[14]===b[14] && a[15]===b[15];
 };
 
 mat4.anglePreservingMatrixInvert=function(mat){
@@ -184,7 +181,7 @@ mat4.anglePreservingMatrixInvert=function(mat){
 };
 
 mat4.transpose_scale_m33=function(out,mat,scale){
-  if (mat==undefined) out = mat4.create();
+  if (mat===undefined) out = mat4.create();
   out[0]=scale*mat[0];
   out[4]=scale*mat[1];
   out[8]=scale*mat[2];

@@ -12,6 +12,12 @@
 
 <script src="/parmath.js"></script>
 <script src="/partrace.js"></script>
+<script src="/baseobj.js"></script>
+
+<script src="/ray.js"></script>
+<script src="/camera.js"></script>
+<script src="/objects.js"></script>
+
 <style>
 body {
   overflow:hidden;
@@ -26,6 +32,15 @@ canvas {
   height:480px;
 }
 </style>
+<script>
+var partrace=null;
+
+$(document).ready(function(){
+  partrace=new Partrace("canvas");
+  partrace.testScene();  
+});
+
+</script>
 </head>
 <body>
 <canvas id="canvas" width="640" height="480"></canvas>
