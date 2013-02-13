@@ -9,6 +9,15 @@ Partrace.Ray=BaseObj.extend({
     this.depth=0; // trace recursion depth    
     this.intersections=[]; // list of intersections this ray has passed through
   },
+  reset:function(){
+    this.p=vec4.fromValues(0,0,0,1); // start position
+    this.d=vec4.fromValues(0,0,1,0); // direction
+    this.intensity=1; // used to track if ray has been fully absorbed by translucent objects
+    this.inside=false; // inside object?
+    this.io=1; // index of refraction
+    this.depth=0; // trace recursion depth    
+    this.intersections=[]; // list of intersections this ray has passed through
+  },
   copy:function(r){
     this.type=r.type;
     vec4.copy(this.p,r.p);

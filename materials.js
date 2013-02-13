@@ -6,6 +6,7 @@ Partrace.Material=BaseObj.extend({
     this.shiny=0;
     this.reflect=0;
     this.refract=0;
+    this.metallic=false;
     this.offset=vec4.create();
     this.rotation=vec4.create();
     this.scale=vec4.fromValues(1,1,1,1);

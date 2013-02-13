@@ -11,9 +11,11 @@
 
 <script src="/js/gl-matrix/dist/gl-matrix.js"></script>
 <script src="/js/class.js"></script>
+<script src="/js/par.js"></script>
 
 <script src="/parmath.js"></script>
 <script src="/partrace.js"></script>
+<script src="/scene.js"></script>
 <script src="/baseobj.js"></script>
 
 <script src="/ray.js"></script>
@@ -27,17 +29,36 @@ body {
   overflow:hidden;
   font-family: Monospace;  
 }
+#content {
+  width:640px;
+  margin:5px;
+}
 canvas { 
   border: 0px solid black;
   background-color: #000;
   z-index:1;
   position:relative;  
-  width:640px;
-  height:480px;
+  width:100%;
+  height:100%;
 }
 #progress{
-  width:640px;
+  left:420px;
+  top:232px;
+  width:480px;
   height:24px;
+  position:absolute;
+  -webkit-transform: rotate(-90deg); 
+  -moz-transform: rotate(-90deg); 
+  -o-transform: rotate(-90deg);
+  -ms-transform: rotate(-90deg);     
+}
+#log {
+  width:638px;
+  height:200px;
+  overflow:auto;
+  border:1px solid black;
+  margin-top:5px;
+  white-space:pre;
 }
 </style>
 <script>
@@ -52,7 +73,10 @@ $(document).ready(function(){
 </script>
 </head>
 <body>
+<div id="content">
 <canvas id="canvas" width="640" height="480"></canvas>
 <div id="progress"></div>
+<div id="log"></div>
+</div>
 </body>
 </html>
