@@ -4,6 +4,14 @@ self.Math.degToRad = self.Math.degToRad || function(d){
 self.Math.radToDeg = self.Math.radToDeg || function(r){
   return r*(180/Math.PI);
 };
+self.Math.clamp = self.Math.clamp || function(v,l,h){
+ if (v<l) return l;
+ if (v>h) return h;
+ return v;
+};
+self.Math.sqr = self.Math.sqr || function(v){
+ return v*v;
+};
 
 self.Int32Array = self.Int32Array || Array;
 self.Float32Array = self.Float32Array || Array;
@@ -22,14 +30,41 @@ String.prototype.trim = String.prototype.trim || function () {
   return this.replace( /^\s+|\s+$/g, '' );
 };
 
-vec4.cross=function(out,a,b){
+vec4.norm=vec4.squaredLength;
+
+vec4.combine=function(out,a,b,f1,f2){
+  if (out===undefined) out=vec4.create();
+  out[0]=a[0]*f1+b[0]*f2;
+  out[1]=a[1]*f1+b[1]*f2;
+  out[2]=a[2]*f1+b[2]*f2;
+  out[3]=a[3]*f1+b[3]*f2;
+  return out;
+};
+vec4.project=function(out,v,d,t){
+  if (out===undefined) out=vec4.create();
+  vec4.scale(out,d,t);
+  vec4.add(out,out,v);
+  return out;  
+};
+
+vec4.crossProduct=function(out,a,b){
+  if (out===undefined) out=vec4.create();
   out[0] = a[1]*b[2]-a[2]*b[1];
   out[1] = a[2]*b[0]-a[0]*b[2];
   out[2] = a[0]*b[1]-a[1]*b[0];
   out[3] = 0;
   return out;
 };
-vec4.norm=vec4.squaredLength;
+vec4.cross=vec4.crossProduct;
+
+vec4.reflect=function(out,v,n){
+  if (out===undefined) out=vec4.create();
+  var vdotn=-2*vec4.dot(v,n);
+  vec4.combine(out,v,n,1,vdotn);  
+  return out;
+}
+
+
 vec4.equals=function(a,b){
   return a[0]==b[0] && a[1]==b[1] && a[2]==b[2] && a[3]==b[3];
 };

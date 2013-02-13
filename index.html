@@ -7,6 +7,8 @@
 <link type="text/css" href="/css/themes/default/jquery-ui.css" rel="stylesheet" />
 <link type="text/css" href="/css/main.css" rel="stylesheet" />
 <script src="/js/jquery.min.js"></script>
+<script src="/js/jquery-ui-1.9.1.custom.min.js"></script>
+
 <script src="/js/gl-matrix/dist/gl-matrix.js"></script>
 <script src="/js/class.js"></script>
 
@@ -16,6 +18,8 @@
 
 <script src="/ray.js"></script>
 <script src="/camera.js"></script>
+<script src="/lights.js"></script>
+<script src="/materials.js"></script>
 <script src="/objects.js"></script>
 
 <style>
@@ -31,11 +35,16 @@ canvas {
   width:640px;
   height:480px;
 }
+#progress{
+  width:640px;
+  height:24px;
+}
 </style>
 <script>
 var partrace=null;
 
 $(document).ready(function(){
+  $("#progress").progressbar();
   partrace=new Partrace("canvas");
   partrace.testScene();  
 });
@@ -44,5 +53,6 @@ $(document).ready(function(){
 </head>
 <body>
 <canvas id="canvas" width="640" height="480"></canvas>
+<div id="progress"></div>
 </body>
 </html>

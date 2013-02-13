@@ -21,7 +21,6 @@ Partrace=Class.extend({
       objects:0,
       lights:0
     };
-
   },
   createBuffer:function(width,height){
     var buffer = document.createElement('canvas');
@@ -39,11 +38,12 @@ Partrace=Class.extend({
   },
   getPixel:function(data,x,y){
     var index = (x + y * this.width) * 4;
-    var p=[];
-    p[0]=data.data[index+0];
-    p[1]=data.data[index+1];
-    p[2]=data.data[index+2];
-    p[3]=data.data[index+3];    
+    var p=vec4.fromValues(
+      data.data[index+0],
+      data.data[index+1],
+      data.data[index+2],
+      data.data[index+3]
+    );
     return p;
   },
   clearBuffer:function(buffer,r,g,b,a){
@@ -71,11 +71,9 @@ Partrace=Class.extend({
     var x=width;
     var y=height;
     var cb=this.colorBuffer;
-    this.clearBuffer(cb);
-    this.copyColorToScreen();
-    var background_color=vec4.fromValues(0,0,0,255);
+    var background_color=vec4.fromValues(0,0,0,1);
     var c_color=vec4.clone(background_color);
-    var aa_color=[0,0,0,255];
+    var aa_color=vec4.clone(background_color);
     var camera=this.camera;
     var stats=this.stats;
     stats.rays['total']=0;
@@ -83,36 +81,53 @@ Partrace=Class.extend({
     stats.rays['reflect']=0;
     stats.rays['refract']=0;
     stats.rays['shadow']=0;
-    camera.setup(width,height);
-    var ray=new Partrace.Ray('screen');
+    stats.rays['hit']=0;
+    stats.rays['miss']=0;
     
-    while (y--){
-      while (x--){
-        camera.makeCameraRay(ray,x,y,vec4.NullVector);
-
-        vec4.copy(c_color,background_color);
-        this.scene.rayTrace(c_color,ray,0);
-        this.setPixel(cb,x,y,c_color[0],c_color[1],c_color[2],c_color[3]);
+    this.clearBuffer(cb);
+    this.copyColorToScreen();
+    
+    camera.setup(width,height);
+    
+    var that=this;
+    var loopFunc=function(){
+      if (y--){
+        while (x--){
+          var ray=new Partrace.Ray('screen');
+          camera.makeCameraRay(ray,x,y,vec4.NullVector);
+          vec4.copy(c_color,background_color);
+          that.scene.raytrace(c_color,ray,0);
+          Partrace.fixColor(c_color);          
+          that.setPixel(cb,x,y,c_color[0],c_color[1],c_color[2],c_color[3]);
+        }
+        x=width;
+        if (y%2==0) that.copyColorToScreen();      
+        that.doProgress(height-y);
+        setTimeout(loopFunc);
+      }else{
+        console.log(stats);
       }
-//      console.log(ray);
-      x=width;
-      this.copyColorToScreen();      
-      this.doProgress(height-y);
-    }
-//    this.copyColorToScreen();
-    console.log(stats);
+    };
+    loopFunc();
+    
+    this.copyColorToScreen();
   },
   doProgress:function(y){
-    var p=(y/this.height*100).toFixed(1);
-    //console.log(p);
+    var p=Math.ceil(y/this.height*100);
+    if (y%32==0) console.log(p);
+    $("#progress").progressbar("option", {max:100,value:p});
   },
-  testScene:function(){
-    var sphere=new Partrace.Objects.Sphere();
-    this.scene.add(sphere);
+  testScene:function(){ //*********************************//
+    var light=new Partrace.Lights.Point();
+    light.attenuationType='linear';
+    light.setPosition(vec4.fromValues(5,5,-5,1));
+    this.scene.add(light);
+    var sphere=new Partrace.Objects.Sphere(null,1);    
+    vec4.set(sphere.material.d,0.9,0,0,1);
+    sphere.material.shiny=16;
     
-    this.camera.translate(0,0,5);
-//    this.camera.rotate(90,0,0);
-//    console.log(this.camera);    
+    this.scene.add(sphere);    
+    this.camera.translate(0,0,-5);
     this.render();
   },
   testbuffer:function(){  
@@ -132,9 +147,17 @@ Partrace=Class.extend({
     console.log(this.getPixel(this.colorBuffer,0,0));
   }  
 });
+Partrace.fixColor=function(color){
+  color[0]=Math.clamp(color[0],0,1)*255;
+  color[1]=Math.clamp(color[1],0,1)*255;
+  color[2]=Math.clamp(color[2],0,1)*255;
+  color[3]=Math.clamp(color[3],0,1)*255;
+}
 Partrace.bounds=10000;
-
+Partrace.epsilon=0.00001;
 Partrace.Objects={};
+Partrace.Lights={};
+Partrace.Materials={};
 
 Partrace.Scene=Class.extend({
   init:function(partrace){
@@ -143,26 +166,82 @@ Partrace.Scene=Class.extend({
     this.lights=[];    
     this.objects=[];
     this.materials=[];
+    this.maxDepth=3;
+    this.doReflect=false;
+    this.doRefract=false;
   },
   add:function(obj){
-    this.objects.push(obj);
+    if (obj instanceof Partrace.Light){
+      this.lights.push(obj);      
+    }else{
+      this.objects.push(obj);
+    }            
     return this.objects.length-1;
   },
-  itersectScene:function(ray,ip){
+  itersectScene:function(ray){
     var stats=this.partrace.stats;
     stats.rays[ray.type]++;
     stats.rays['total']++;
-  },
-  rayTrace:function(color,ray,depth){
-    if (depth>3) return;
+    
     var objects=this.objects;
-    var o = objects.length;
+    var i = objects.length;
     var ip=null;
-    while (o--){
-      if (ip=objects[o].intersect(ray)){
+    var bestDist=Partrace.bounds;
+    while (i--){
+      if (ip=objects[i].intersect(ray)){
         ray.intersections.push(ip);
       }
     }
+    if (ray.intersections.length>1){
+      ray.intersections.sort(function(a,b){
+        return a.dist2-b.dist2;
+      });
+    }
+    if (ray.intersections.length>0) {
+      var ip=ray.intersections[0];
+      ray.ip=ip;
+      ip.dist=Math.sqrt(ip.dist2);
+      ip.object.normal(ray);
+      ip.object.uvw(ray);
+    }
+    return ray.intersections.length;
+  },
+  raytrace:function(color,ray,depth){
+    if (depth>this.maxDepth) return;
+    if (!this.itersectScene(ray)) {
+      this.partrace.stats.rays['miss']++;
+      return;
+    }
+    this.partrace.stats.rays['hit']++;
+    var ip=ray.ip;
+    var mat = ip.object.material;
+    vec4.set(color,0,0,0,1);
+    
+    var a=mat.d[3]; // alpha    
+    var r=mat.reflect; // reflectance
+    var ir=mat.refract; // index of refraction
+    var lights=this.lights;
+    var i = lights.length;
+    var lightColor=vec4.create();
+    var reflectColor=vec4.create();
+    var refractColor=vec4.create();
+    while (i--){
+      var light=lights[i];      
+      light.intensity(lightColor,ip);
+      a=ip.d[3];
+      vec4.add(color,color,lightColor);
+      if (depth<this.maxDepth){
+        if (this.doReflect && r>0 && !ray.inside){
+        }
+        if (this.doRefract && a>0){
+        }
+      }
+    }
+    vec4.scale(color,color,1/lights.length);
+    this.calcFog(color,ip);
+    
+  },
+  calcFog:function(color,ip){
   }
 });
 

@@ -1,14 +1,14 @@
-Partrace.Objects.Sphere=BaseObj.extend({
-  init:function(parent){
-    this._super(parent);
-    this.setRadius(0.5);
+Partrace.Objects.Sphere=Partrace.Objects.MaterialObj.extend({
+  init:function(parent,radius){
+    this._super(parent);        
+    this.setRadius(radius||0.5);
   },
   setRadius:function(r){
     this.radius = r;
     this.radius2 = this.radius*this.radius;
   },
   intersect:function(ray){
-    var ip = new Patrace.Intersection(ray,this);
+    var ip = new Partrace.Intersection(ray,this);
     this.absoluteToLocal(ip.lp,ip.p);
     this.absoluteToLocal(ip.ld,ip.d);
     var dst=vec4.clone(ip.lp);
@@ -21,28 +21,30 @@ Partrace.Objects.Sphere=BaseObj.extend({
     var t1=-b-d;
     var t2=-b+d;
     if (t1<0 && t2<0) return false;
-    ip.lip=vec4.create();
     if (t1>0){
-      vec4.lerp(ip.lip,ip.lp,ip.ld,t1);
+      vec4.project(ip.lip,ip.lp,ip.ld,t1);
     }else{
-      vec4.lerp(ip.lip,ip.lp,ip.ld,t2);
+      vec4.project(ip.lip,ip.lp,ip.ld,t2);
     }
     ray.inside=t1<0;
     this.localToAbsolute(ip.ip,ip.lip);
+    ip.dist2=vec4.squaredDistance(ray.p,ip.ip);
     return ip;
   },    
-  normal:function(ip,ray){
+  normal:function(ray){
+    var ip = ray.ip;
     if (ip.n) {
       vec4.copy(ip.n,ip.ip);
     }else{
       ip.n=vec4.clone(ip.ip);
     }
-    vec4.sub(ip.n,this.position);
-    vec4.scale(ip.n,1/this.radius);
-    ip.n[3]=0;
+    
+    vec4.sub(ip.n,ip.n,this.position);
+    vec4.scale(ip.n,ip.n,1/this.radius);
     return ip.n;
   },
-  uvw:function(ip,ray){
+  uvw:function(ray){
+    var ip = ray.ip;
     var tip=vec4.clone(ip.lip);
     vec4.normalize(tip,tip);
     if (!ip.uvw) ip.uvw=vec4.create();

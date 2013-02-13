@@ -2,12 +2,14 @@ Partrace.Camera=BaseObj.extend({
   init: function(partrace,parent){
     this._super(parent);
     this.partrace=partrace;
+    this.setPosition(vec4.fromValues(0,0,1,1));
     
     this.look=vec4.fromValues(0,0,-1,0);
-    this.fov=45;
-    this.aspectRatio=1;
+    this.fov=90;
+    
     this.width=partrace.width;
     this.height=partrace.height;
+    this.aspectRatio=this.width/this.height;
 
     this.focusBlurLevels=3;
     this.focusDist=-0.5;
@@ -33,7 +35,7 @@ Partrace.Camera=BaseObj.extend({
     this.width=width;
     this.height=height;
 
-//    this.pointTo(this.look);
+    //this.pointTo(this.look);
 
     this.aspectRatio=width/height;
 
