@@ -1,11 +1,3 @@
-self.console = self.console || {
-  info: function () {},
-  log: function () {},
-  debug: function () {},
-  warn: function () {},
-  error: function () {}
-};
-
 Partrace=Class.extend({
   init:function(canvas){
     this.element = document.getElementById(canvas);
@@ -16,11 +8,6 @@ Partrace=Class.extend({
     this.zBuffer =     this.ctx.createImageData(this.width,this.height);
     this.camera = new Partrace.Camera(this);
     this.scene = new Partrace.Scene(this);
-    this.stats = {
-      rays:{},
-      objects:0,
-      lights:0
-    };
   },
   createBuffer:function(width,height){
     var buffer = document.createElement('canvas');
@@ -76,21 +63,7 @@ Partrace=Class.extend({
     var aa_color=vec4.create();
     var camera=this.camera;
 
-    this.stats = {
-      rays:{},
-      objects:0,
-      lights:0
-    };
-    
-    var stats=this.stats;
-    stats.rays['total']=0;
-    stats.rays['camera']=0;
-    stats.rays['reflect']=0;
-    stats.rays['refract']=0;
-    stats.rays['shadow']=0;
-    stats.rays['fog']=0;
-    stats.rays['hit']=0;
-    stats.rays['miss']=0;
+    this.scene.resetStats();
     
     this.clearBuffer(cb);
     this.copyColorToScreen();
@@ -115,23 +88,11 @@ Partrace=Class.extend({
         setTimeout(loopFunc);
       }else{
         that.copyColorToScreen();      
-        that.computeStats();
-        Partrace.log(stats);
+        that.scene.computeStats();
+        Partrace.log(that.scene.stats);
       }
     };
     loopFunc();
-  },
-  computeStats:function(){
-    var stats=this.stats.rays;
-    if (!stats.total) return;
-    for (var key in stats){
-      if (key=="total") continue;
-      var new_key=key+"_percent";
-      stats[new_key]=(stats[key]/stats.total*100).toFixed(1);
-    }
-    stats=this.stats;
-    stats.objects=this.scene.objects.length;
-    stats.lights=this.scene.lights.length;
   },
   doProgress:function(y){
     var p=Math.ceil(y/this.height*100);
@@ -159,8 +120,8 @@ Partrace=Class.extend({
     sphere.material.shiny=16;    
     this.scene.add(sphere);  
 
-    var sphere=new Partrace.Objects.Sphere(null,0.5);
-    sphere.setPosition(vec4.fromValues(0,-0.5,-1.25,1));
+    var sphere=new Partrace.Objects.Sphere(null,0.75);
+    sphere.setPosition(vec4.fromValues(0.75,-0.25,-1.25,1));
     sphere.material.refract=1.51714; // glass
     vec4.set(sphere.material.d,0.1,0.1,0.1,0.25);
     sphere.material.shiny=64;    
@@ -170,8 +131,7 @@ Partrace=Class.extend({
     plane.setPosition(vec4.fromValues(0,-1,0,1));
     vec4.set(plane.material.d,0.0,1.0,0.0,1);
     this.scene.add(plane);
-    
-      
+          
     this.camera.setPosition(vec4.fromValues(0,0,-3,1));
     this.render();
   }
@@ -195,6 +155,3 @@ Partrace.epsilon=0.00001;
 Partrace.Objects={};
 Partrace.Lights={};
 Partrace.Materials={};
-
-
-

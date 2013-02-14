@@ -49,7 +49,7 @@ Partrace.Lights.Point=Partrace.Light.extend({
     
     var oi=1; //attenuation modifyer for soft shadows and caustics
     
-    if (this.scene.doShadows){
+    if (this.scene.doShadows && !ip.ray.inside){
       var sRay=new Partrace.Ray('shadow',ip.ip,l);
       vec4.combine(sRay.p,sRay.p,sRay.d,1,Partrace.epsilon);
       sRay.depth=ip.ray.depth;
@@ -57,15 +57,17 @@ Partrace.Lights.Point=Partrace.Light.extend({
       if (this.scene.itersectScene(sRay)){
         var smat=sRay.ip.object.material;
         if (smat){
-          var sColor=vec4.create();
           var sta=smat.getAttrs(sRay.ip.lip);
-          if (sta.d[3]<1){
+          if (false && sta.d[3]<1){
             oi=sta.d[3];
+            var sColor=vec4.create();            
             vec4.scale(sColor,sta.d,oi-smat.reflect);
             vec4.multiply(dl,dl,sColor);
-          }else{
+          }else{ // end caustic
             oi=this.ka[0];
           }
+        }else{ // end smat
+          oi=this.ka[0];
         }
       }
     }
@@ -88,8 +90,7 @@ Partrace.Lights.Point=Partrace.Light.extend({
       default: att=1; // no falloff
     }
     
-    vec4.add(al,al,mat.a); // combine material ambient    
-    
+    vec4.add(al,al,mat.a); // combine material ambient       
 
     vec4.multiply(dl,dl,mat.d); // combine light diffuse with material
     vec4.scale(dl,dl,ldotn); //diffuse color shaded by angle between light and normal

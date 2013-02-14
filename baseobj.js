@@ -9,8 +9,6 @@ var BaseObj = Class.extend({
     this.scale=vec4.create();
     this.rotation=vec4.create();
     this.localMatrix=mat4.create();
-    this.absoluteMatrix=mat4.create();
-    this.invAbsoluteMatrix=mat4.create();    
     this.calculating=false;
     this.scene=null;
 
@@ -22,12 +20,11 @@ var BaseObj = Class.extend({
     vec4.copy(this.scale,    vec4.XYZVector);  
     vec4.copy(this.rotation, vec4.NullPoint);  
     mat4.identity(this.localMatrix);
-    mat4.identity(this.absoluteMatrix);
-    mat4.identity(this.invAbsoluteMatrix);
     
     this.material=null;
   },
   pointTo:function(target){
+    this.dirty=true;
     var absDir=vec4.create();
     vec4.subtract(absDir, target, this.absolutePosition());
     vec4.normalize(absDir,absDir);
@@ -65,7 +62,7 @@ var BaseObj = Class.extend({
     vec4.scale(v,this.direction, this.scale[2]);
     mat4.setZ(this.localMatrix, v);
     mat4.setW(this.localMatrix, this.position);
-    this.calculating=false;
+    this.calculating=false;    
     return this;    
   },
   absoluteToLocal:function(out,v){
@@ -79,10 +76,11 @@ var BaseObj = Class.extend({
     return out;
   },
   getLocalMatrix:function(){
-    this.rebuildMatrix();
+    if (this.dirty || !this.localMatrix) this.rebuildMatrix();
     return this.localMatrix;
   },
   setMatrix:function(mat){
+    this.dirty=true;
     mat4.copy(this.localMatrix,mat);
 
     mat4.getY(this.up,this.localMatrix);
@@ -98,9 +96,13 @@ var BaseObj = Class.extend({
     return this;
   },
   getAbsolutePosition:function(){
-    return mat4.getW(undefined,this.getAbsoluteMatrix());
+    if (this.dirty || !this.absPos){
+      this.absPos= mat4.getW(undefined,this.getAbsoluteMatrix());
+    }
+    return this.absPos;
   },  
   setPosition:function(pos){
+    this.dirty=true;
     pos[3]=1;
     vec4.copy(this.position,pos);
     this.rebuildMatrix();
@@ -118,15 +120,19 @@ var BaseObj = Class.extend({
     return this.parent;
   },
   setParent:function(parent){
+    this.dirty=true;  
     if (this!==parent && this.parent!==parent) this.parent=parent;
     return this;
   },
   getAbsoluteDirection:function(){
-    var result=mat4.getZ(undefined,this.absoluteMatrix);
-    vec4.normalize(result,result);
-    return result;
+    if (this.dirty || !this.absUp){
+      this.absUp=mat4.getZ(undefined,this.getAbsoluteMatrix());
+      vec4.normalize(this.absUp,this.absUp);
+    }
+    return this.absUp;
   },
   setDirection:function(dir){
+    this.dirty=true;  
     if (!vec4.isNull(dir)) {
       vec4.normalize(dir,dir);
       vec4.copy(this.direction,dir);
@@ -134,7 +140,7 @@ var BaseObj = Class.extend({
     }
     return this;
   },
-  setAbsoluteDirection:function(dir){
+  setAbsoluteDirection:function(dir){  
     if (this.parent){
       this.setDirection(this.parent.absoluteToLocal(dir));
     } else {
@@ -143,12 +149,15 @@ var BaseObj = Class.extend({
     return this;
   },  
   getAbsoluteUp:function(){
-    var result=mat4.getY(undefined,this.absoluteMatrix);
-    vec4.normalize(result,result);
-    return result;
+    if (this.dirty || !this.absUp){
+      this.absUp=mat4.getY(undefined,this.getAbsoluteMatrix());
+      vec4.normalize(this.absUp,this.absUp);
+    }
+    return this.absUp;
   },
-  setUp:function(up){
+  setUp:function(up){  
     if (!vec4.isNull(up)) {
+      this.dirty=true;    
       vec4.normalize(up,up);
       vec4.copy(this.up,up);
       this.rebuildMatrix();
@@ -164,34 +173,42 @@ var BaseObj = Class.extend({
     return this;
   },
   setScaling:function(scl){
+    this.dirty=true;  
     scl[3]=1;
     vec4.copy(this.scaling,scl);
     this.rebuildMatrix();
     return this;
   },
   setRotation:function(rot){ // fix
+    this.dirty=true;  
     vec4.copy(this.rotation,rot);
     this.rebuildMatrix();
     return this;
   },
   getAbsoluteMatrix:function(){
-    if (this.parent) {
-      mat4.multiply(this.localMatrix, this.parent.getAbsoluteMatrix(), this.getLocalMatrix());
-    } else {
-      mat4.copy(this.absoluteMatrix,this.getLocalMatrix());
+    if (this.dirty || !this.absoluteMatrix || (this.parent && this.parent.dirty)){
+      if (!this.absoluteMatrix) this.absoluteMatrix=mat4.create();
+      this.dirty=false;
+      if (this.parent) {
+        mat4.multiply(this.localMatrix, this.parent.getAbsoluteMatrix(), this.getLocalMatrix());
+      } else {
+        mat4.copy(this.absoluteMatrix,this.getLocalMatrix());
+      }
     }
     return this.absoluteMatrix;
   },
   getInvAbsoluteMatrix:function(){
-    if (mat4.equals(this.scale, vec4.XYZVector)) {
-      this.getAbsoluteMatrix();
-      if (this.parent){
-        mat4.multiply(this.invAbsoluteMatrix,this.parent.getInvAbsoluteMatrix(), mat4.anglePreservingMatrixInvert(this.getLocalMatrix()));
+    if (this.dirty || !this.invAbsoluteMatrix){
+      if (!this.invAbsoluteMatrix) this.invAbsoluteMatrix=mat4.create();
+      if (mat4.equals(this.scale, vec4.XYZVector)) {
+        if (this.parent){
+          mat4.multiply(this.invAbsoluteMatrix,this.parent.getInvAbsoluteMatrix(), mat4.anglePreservingMatrixInvert(this.getLocalMatrix()));
+        } else {
+          mat4.copy(this.invAbsoluteMatrix,mat4.anglePreservingMatrixInvert(this.getLocalMatrix()));
+        }
       } else {
-        mat4.copy(this.invAbsoluteMatrix,mat4.anglePreservingMatrixInvert(this.getLocalMatrix()));
+        mat4.invert(this.invAbsoluteMatrix,this.getAbsoluteMatrix());
       }
-    } else {
-      mat4.invert(this.invAbsoluteMatrix,this.getAbsoluteMatrix());
     }
     return this.invAbsoluteMatrix;
   },

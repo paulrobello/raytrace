@@ -5,17 +5,46 @@ Partrace.Scene=Class.extend({
     this.lights=[];    
     this.objects=[];
     this.materials=[];
-    this.maxDepth=2;
+    this.maxDepth=3;
     this.doReflect=true;
     this.doRefract=true;
     this.doShadows=true;
-    this.background_color=vec4.fromValues(0,0,0,1);    
-    this.fogNear=1;
-    this.fogFar=10;
-    this.fogRange=this.fogFar-this.fogNear;
-    this.fogColor=vec4.clone(this.background_color);
-    
+    this.bg_color=vec4.fromValues(0,0,0,1);    
+    this.fog=new Partrace.Fog(this,this.bg_color,'linear');
+    this.stats = {
+      rays:{},
+      objects:0,
+      lights:0
+    };    
   },
+  resetStats:function(){
+    this.stats = {
+      rays:{},
+      objects:0,
+      lights:0
+    };
+    var stats=this.stats;    
+    
+    stats.rays['total']=0;
+    stats.rays['camera']=0;
+    stats.rays['fog_hit']=0;
+    stats.rays['fog_miss']=0;
+    stats.rays['hit']=0;
+    stats.rays['miss']=0;
+    return this;  
+  },
+  computeStats:function(){
+    var stats=this.stats.rays;
+    if (!stats.total) return;
+    for (var key in stats){
+      if (key==="total") continue;
+      var new_key=key+"_percent";
+      stats[new_key]=(stats[key]/stats.total*100).toFixed(1);
+    }
+    stats=this.stats;
+    stats.objects=this.objects.length;
+    stats.lights =this.lights.length;
+  },  
   add:function(obj){
     obj.scene=this;
     if (obj instanceof Partrace.Light){
@@ -26,17 +55,17 @@ Partrace.Scene=Class.extend({
     return this.objects.length-1;
   },
   ipSort:function(a,b){
-     return a.dist2-b.dist2;
+    return a.dist2-b.dist2;
   },
   itersectScene:function(ray){
-    var stats=this.partrace.stats;
+    var stats=this.stats;
+    if (!stats.rays[ray.type]) stats.rays[ray.type]=0;
     stats.rays[ray.type]++;
     stats.rays['total']++;
     
     var objects=this.objects;
     var i = objects.length;
     var ip=null;
-    var bestDist=Partrace.bounds;
     while (i--){
       if (ip=objects[i].intersect(ray)){
         ray.intersections.push(ip);
@@ -47,22 +76,30 @@ Partrace.Scene=Class.extend({
     if (ray.intersections.length>0) {
       var ip=ray.intersections[0];
       ray.ip=ip;
+      ip.ray=ray;
       ip.dist=Math.sqrt(ip.dist2);
       ip.object.normal(ray);
       ip.object.uvw(ray);
     }else{
       ray.ip=false;
     }
-    return ray.intersections.length;
-  },
-  raytrace:function(color,ray,depth,ir){
-    vec4.copy(color,this.background_color);
-    if (depth>this.maxDepth) return false;
-    if (!this.itersectScene(ray)) {
-      this.partrace.stats.rays['miss']++;
+    if (ray.intersections.length){
+      stats.rays['hit']++;
+      if (!stats.rays[ray.type+'_hit']) stats.rays[ray.type+'_hit']=0;
+      stats.rays[ray.type+'_hit']++;
+      return true;
+    }else{
+      if (!stats.rays[ray.type+'_miss']) stats.rays[ray.type+'_miss']=0;
+      stats.rays['miss']++;
+      stats.rays[ray.type+'_miss']++;      
       return false;
     }
-    this.partrace.stats.rays['hit']++;
+  },
+  raytrace:function(color,ray,depth,ir){
+    vec4.copy(color,this.bg_color);
+    if (depth>this.maxDepth) return false;
+    if (!this.itersectScene(ray)) return false;
+    
     var ip=ray.ip;
     var mat = ip.object.material;
     vec4.set(color,0,0,0,1);
@@ -136,19 +173,13 @@ Partrace.Scene=Class.extend({
       } // end if depth < maxdepth
     } // end while i
     vec4.scale(color,color,1/lights.length);
-    this.calcFog(color,ip);    
+    if (this.fog){
+      if (this.fog.calc(color,ip)){
+        this.stats.rays['fog_hit']++;
+      }else{
+        this.stats.rays['fog_miss']++;
+      }      
+    }
     return true;    
   },
-  calcFog:function(color,ip){
-    if (this.fogNear<0) return;
-    var d=ip.dist-this.fogNear;
-    if (d<=0) return
-    var c=d/this.fogRange;
-    if (c>=this.fogRange) {
-      vec4.copy(color,this.fogColor);
-    } else {
-      vec4.combine(color,color,this.fogColor,1-c,c);
-    }
-    this.partrace.stats.rays['fog']++;
-  }
 });
