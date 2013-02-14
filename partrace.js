@@ -71,9 +71,9 @@ Partrace=Class.extend({
     var x=width;
     var y=height;
     var cb=this.colorBuffer;
-    var background_color=vec4.fromValues(0,0,0,1);
-    var c_color=vec4.clone(background_color);
-    var aa_color=vec4.clone(background_color);
+
+    var c_color=vec4.create();
+    var aa_color=vec4.create();
     var camera=this.camera;
 
     this.stats = {
@@ -88,6 +88,7 @@ Partrace=Class.extend({
     stats.rays['reflect']=0;
     stats.rays['refract']=0;
     stats.rays['shadow']=0;
+    stats.rays['fog']=0;
     stats.rays['hit']=0;
     stats.rays['miss']=0;
     
@@ -103,7 +104,7 @@ Partrace=Class.extend({
         while (x--){
           ray.reset();
           camera.makeCameraRay(ray,x,y,vec4.NullVector);
-          vec4.copy(c_color,background_color);
+          vec4.set(c_color,0,0,0,1);
           that.scene.raytrace(c_color,ray,0,1);
           Partrace.fixColor(c_color);          
           that.setPixel(cb,x,y,c_color[0],c_color[1],c_color[2],c_color[3]);
@@ -140,6 +141,7 @@ Partrace=Class.extend({
   testScene:function(){ //*********************************//
     var light=new Partrace.Lights.Point();
     light.setPosition(vec4.fromValues(5,5,-5,1));
+    light.fallOffRadius=15;
     this.scene.add(light);
     var sphere=new Partrace.Objects.Sphere(null,1);    
     sphere.setPosition(vec4.fromValues(-1.25,0,0,1));
@@ -157,13 +159,18 @@ Partrace=Class.extend({
     sphere.material.shiny=16;    
     this.scene.add(sphere);  
 
-    var sphere=new Partrace.Objects.Sphere(null,0.75);
-    sphere.setPosition(vec4.fromValues(0,0,-1.25,1));
-    sphere.material.refract=1.1;
-    vec4.set(sphere.material.d,0.9,0.9,0.9,0.25);
-    //vec4.set(sphere.material.a,0.9,0,0,1);
-    sphere.material.shiny=16;    
+    var sphere=new Partrace.Objects.Sphere(null,0.5);
+    sphere.setPosition(vec4.fromValues(0,-0.5,-1.25,1));
+    sphere.material.refract=1.51714; // glass
+    vec4.set(sphere.material.d,0.1,0.1,0.1,0.25);
+    sphere.material.shiny=64;    
     this.scene.add(sphere);  
+    
+    var plane=new Partrace.Objects.Plane(null);
+    plane.setPosition(vec4.fromValues(0,-1,0,1));
+    vec4.set(plane.material.d,0.0,1.0,0.0,1);
+    this.scene.add(plane);
+    
       
     this.camera.setPosition(vec4.fromValues(0,0,-3,1));
     this.render();

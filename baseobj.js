@@ -12,6 +12,7 @@ var BaseObj = Class.extend({
     this.absoluteMatrix=mat4.create();
     this.invAbsoluteMatrix=mat4.create();    
     this.calculating=false;
+    this.scene=null;
 
     vec4.negate(this.left,   vec4.XVector);
     vec4.copy(this.right,    vec4.XVector);
@@ -142,7 +143,7 @@ var BaseObj = Class.extend({
     return this;
   },  
   getAbsoluteUp:function(){
-    var result=mat4.getY(this.absoluteMatrix);
+    var result=mat4.getY(undefined,this.absoluteMatrix);
     vec4.normalize(result,result);
     return result;
   },

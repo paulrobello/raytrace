@@ -13,10 +13,9 @@ Partrace.Light=BaseObj.extend({
 });
 
 Partrace.Lights.Point=Partrace.Light.extend({
-  init: function(partrace,parent){
+  init: function(parent){
     this._super(parent);
     this.attenuationType='squared';
-    this.fallOffRadius=25;
     this.radius=2;
   },
   intensity:function(color,ip){
@@ -32,9 +31,6 @@ Partrace.Lights.Point=Partrace.Light.extend({
       sh=mat.shiny;
       a=mat.d[3];
     }
-    var sl=vec4.create(); // no specular
-    var dl=vec4.create(); // no diffuse
-    var al=vec4.clone(this.ka); // ambient
       
     var l=vec4.create(); // light vector
     vec4.subtract(l,this.position,ip.ip);
@@ -44,10 +40,35 @@ Partrace.Lights.Point=Partrace.Light.extend({
     var dist=dist2*dn;
     
     var ldotn=vec4.dot(l,ip.n);
-    //if (ldotn<Partrace.epsilon) return; // disable for 2 sided lighting
+    if (ldotn<=0) return;
     
-//    var st=new Partrace.Intersection(); // shadow ip
+    var sl=vec4.create(); // no specular
+    var dl=vec4.create(); // no diffuse
+    var al=vec4.clone(this.ka); // ambient    
+    vec4.copy(dl,this.kd); 
+    
     var oi=1; //attenuation modifyer for soft shadows and caustics
+    
+    if (this.scene.doShadows){
+      var sRay=new Partrace.Ray('shadow',ip.ip,l);
+      vec4.combine(sRay.p,sRay.p,sRay.d,1,Partrace.epsilon);
+      sRay.depth=ip.ray.depth;
+      
+      if (this.scene.itersectScene(sRay)){
+        var smat=sRay.ip.object.material;
+        if (smat){
+          var sColor=vec4.create();
+          var sta=smat.getAttrs(sRay.ip.lip);
+          if (sta.d[3]<1){
+            oi=sta.d[3];
+            vec4.scale(sColor,sta.d,oi-smat.reflect);
+            vec4.multiply(dl,dl,sColor);
+          }else{
+            oi=this.ka[0];
+          }
+        }
+      }
+    }
     
     //phong specular
     if (sh>0){
@@ -69,7 +90,7 @@ Partrace.Lights.Point=Partrace.Light.extend({
     
     vec4.add(al,al,mat.a); // combine material ambient    
     
-    vec4.copy(dl,this.kd);
+
     vec4.multiply(dl,dl,mat.d); // combine light diffuse with material
     vec4.scale(dl,dl,ldotn); //diffuse color shaded by angle between light and normal
 

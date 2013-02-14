@@ -54,3 +54,50 @@ Partrace.Objects.Sphere=Partrace.Objects.MaterialObj.extend({
     ip.uvw[3]=1;
   }      
 });
+
+Partrace.Objects.Plane=Partrace.Objects.MaterialObj.extend({
+  init:function(parent,width,height){
+    this._super(parent);        
+    this.width=width||5;
+    this.height=height||5;
+  },
+  intersect:function(ray){
+    var ip = new Partrace.Intersection(ray,this);
+    this.absoluteToLocal(ip.lp,ip.p);
+    this.absoluteToLocal(ip.ld,ip.d);
+    var n = this.getAbsoluteUp();
+    var sp = vec4.clone(ip.lp);
+    vec4.negate(sp,sp);
+    sp[3]=0;
+    var d = vec4.dot(ip.ld,n);
+//    if (d>Partrace.epsilon || d<-Partrace.epsilon) return false;
+     if (d>Partrace.epsilon) return false;
+          
+    d=1/d;
+    var t = vec4.dot(sp,n)*d;    
+    if (t<=0) return false;
+    vec4.combine(ip.lip,ip.lp,ip.ld,1,t);    
+    if ( (Math.abs(ip.lip[0])>0.5*this.width) || (Math.abs(ip.lip[1])>0.5*this.height) ) return false;
+    
+    this.localToAbsolute(ip.ip,ip.lip);
+    ip.dist2=vec4.squaredDistance(ray.p,ip.ip);
+    return ip;
+  },    
+  normal:function(ray){
+    var ip = ray.ip;
+    if (ip.n) {
+      vec4.copy(ip.n,this.getAbsoluteUp());
+    }else{
+      ip.n=vec4.clone(getAbsoluteUp());
+    }
+    return ip.n;
+  },
+  uvw:function(ray){
+    var ip = ray.ip;
+    if (!ip.uvw) ip.uvw=vec4.create();
+    ip.uvw[0]=1-(ip[0]+this.width/2)/this.width;
+    ip.uvw[1]=  (ip[1]+this.height/2)/this.height;
+    ip.uvw[2]=0;
+    ip.uvw[3]=1;
+  }      
+});
