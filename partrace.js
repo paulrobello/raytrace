@@ -102,7 +102,7 @@ Partrace=Class.extend({
     $("#progress").progressbar("option", {value:p});
   },
   testScene:function(){ //*********************************//
-    this.camera.setPosition(vec4.fromValues(0,0,-3,1));  
+    this.camera.setPosition(vec4.fromValues(0,3,-3,1));  
     this.scene.fog.setNear(0);
     this.scene.fog.setFar(9);
     var light=new Partrace.Lights.Point();
@@ -133,7 +133,7 @@ Partrace=Class.extend({
     sphere.material.refract=1.0; 
     vec4.set(sphere.material.d,0.1,0.1,0.1,0.25);
     sphere.material.shiny=64;    
-    this.scene.add(sphere);  
+//    this.scene.add(sphere);  
     
     var plane=new Partrace.Objects.Plane(null);
     plane.setPosition(vec4.fromValues(0,-1,0,1));

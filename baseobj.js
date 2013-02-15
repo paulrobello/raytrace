@@ -15,7 +15,7 @@ var BaseObj = Class.extend({
     vec4.copy(this.up,       vec4.YVector);
     vec4.copy(this.direction,vec4.ZVector);
     vec4.copy(this.position, vec4.NullPoint);
-    vec4.copy(this.scale,    vec4.XYZVector);  
+    vec4.copy(this.scale,    vec4.XYZWVector);  
     vec4.copy(this.rotation, vec4.NullPoint);  
     mat4.identity(this.localMatrix);
     
@@ -23,23 +23,27 @@ var BaseObj = Class.extend({
   },
   pointTo:function(target){
     this.dirty=true;
-    var absDir=vec4.create();
-    vec4.subtract(absDir, target, this.getAbsolutePosition());
-    vec4.normalize(absDir,absDir);
-    var absRight=vec4.create();
-    vec4.cross(absRight,absDir, vec4.YVector);
-    vec4.normalize(absRight,absRight);
-    var absUp=vec4.create();
-    vec4.cross(absUp, absRight, absDir);
-    // convert absolute to local and adjust object   
-    if (this.parent) {      
-      vec4.copy(this.direction,this.parent.absoluteToLocal(absDir));
-      vec4.copy(this.up,this.parent.absoluteToLocal(absUp));
-    } else {
-      vec4.copy(this.direction,absDir);
-      vec4.copy(this.up,absUp);
+    var pos=vec4.clone(this.position);
+    pos[0]*=-1;
+    pos[2]*=-1;
+    
+    if (this.parent) {
+      this.parent.localToAbsolute(pos,pos);
     }
-    this.rebuildMatrix();
+    mat4.lookAt(this.localMatrix,pos,target,vec4.YVector);    
+    
+    mat4.getY(this.up,this.localMatrix);
+    vec4.scale(this.up,this.up,this.scale[1]);
+    mat4.getZ(this.direction,this.localMatrix);
+    vec4.scale(this.direction,this.direction,this.scale[2]);
+    
+    if (this.parent) {      
+      this.parent.absoluteToLocal(this.direction,this.direction);
+      this.parent.absoluteToLocal(this.up,this.up);
+    }
+  },
+  getPosition:function(){
+    return this.position;
   },
   getRight:function(){
     if (this.dirty || !this.left){

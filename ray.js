@@ -5,7 +5,7 @@ Partrace.Ray=BaseObj.extend({
     this.d=d||vec4.fromValues(0,0,1,0); // direction
     this.intensity=1; // used to track if ray has been fully absorbed by translucent objects
     this.inside=false; // inside object?
-    this.io=1; // index of refraction
+    this.ir=1; // index of refraction
     this.depth=0; // trace recursion depth    
     this.intersections=[]; // list of intersections this ray has passed through
   },
@@ -14,7 +14,7 @@ Partrace.Ray=BaseObj.extend({
     this.d=vec4.fromValues(0,0,1,0); // direction
     this.intensity=1; // used to track if ray has been fully absorbed by translucent objects
     this.inside=false; // inside object?
-    this.io=1; // index of refraction
+    this.ir=1; // index of refraction
     this.depth=0; // trace recursion depth    
     this.intersections=[]; // list of intersections this ray has passed through
   },
@@ -24,7 +24,7 @@ Partrace.Ray=BaseObj.extend({
     vec4.copy(this.d,r.d);
     this.intensity=r.intensity;
     this.inside=r.inside;
-    this.io=r.io;
+    this.ir=r.ir;
     this.depth=r.depth;
     this.intersections=r.intersections.slice(0);
   },

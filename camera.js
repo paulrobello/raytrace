@@ -2,9 +2,9 @@ Partrace.Camera=BaseObj.extend({
   init: function(partrace,parent){
     this._super(parent);
     this.partrace=partrace;
-    this.setPosition(vec4.fromValues(0,0,1,1));
+    this.setPosition(vec4.fromValues(0,0,-1,1));
     
-    this.look=vec4.fromValues(0,0,-1,0);
+    this.look=vec4.fromValues(0,0,0,1);
     this.fov=90;
     
     this.width=partrace.width;
@@ -14,6 +14,17 @@ Partrace.Camera=BaseObj.extend({
     this.focusBlurLevels=3;
     this.focusDist=-0.5;
     this.farFocusDist=0.75;    
+  },
+  setLook:function(look){
+    look[3]=1;
+    vec4.copy(this.look,look);
+    return this;
+  },
+  setLookXYZ:function(x,y,z){
+    this.look[0]=x;
+    this.look[1]=y;
+    this.look[2]=z;
+    return this;
   },
   makeCameraRay:function(out,x,y,o){
     out.copy(this.defaultCameraRay);
@@ -35,7 +46,7 @@ Partrace.Camera=BaseObj.extend({
     this.width=width;
     this.height=height;
 
-    //this.pointTo(this.look);
+    this.pointTo(this.look);
 
     this.aspectRatio=width/height;
 
@@ -47,5 +58,6 @@ Partrace.Camera=BaseObj.extend({
     this.defaultCameraRay=new Partrace.Ray('camera');
     vec4.copy(this.defaultCameraRay.p,this.position);
     vec4.copy(this.defaultCameraRay.d,this.direction);
+    return this;
   }  
 });
