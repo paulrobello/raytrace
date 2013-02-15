@@ -9,6 +9,11 @@ self.Math.clamp = self.Math.clamp || function(v,l,h){
  if (v>h) return h;
  return v;
 };
+self.Math.saturate = self.Math.saturate || function(v){
+ if (v<0) return 0;
+ if (v>1) return 1;
+ return v;
+};
 self.Math.sqr = self.Math.sqr || function(v){
  return v*v;
 };
@@ -40,10 +45,12 @@ vec4.combine=function(out,a,b,f1,f2){
   out[3]=a[3]*f1+b[3]*f2;
   return out;
 };
-vec4.project=function(out,v,d,t){
+vec4.project=function(out,p,d,t){
   if (out===undefined) out=vec4.create();
-  vec4.scale(out,d,t);
-  vec4.add(out,out,v);
+  out[0]=p[0]+d[0]*t;
+  out[1]=p[1]+d[1]*t;
+  out[2]=p[2]+d[2]*t;
+  out[3]=p[3]+d[3]*t;
   return out;  
 };
 
@@ -60,10 +67,9 @@ vec4.cross=vec4.crossProduct;
 vec4.reflect=function(out,v,n){
   if (out===undefined) out=vec4.create();
   var vdotn=-2*vec4.dot(v,n);
-  vec4.combine(out,v,n,1,vdotn);  
+  vec4.project(out,v,n,vdotn);  
   return out;
 }
-
 
 vec4.equals=function(a,b){
   return a[0]==b[0] && a[1]==b[1] && a[2]==b[2] && a[3]==b[3];

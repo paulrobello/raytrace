@@ -7,6 +7,12 @@ Partrace.Light=BaseObj.extend({
     this.kd=vec4.fromValues(1,1,1,1);
     this.ks=vec4.clone(this.kd);
     this.fallOffRadius=10;
+    this.l=vec4.create(); // light vector used by intensity function
+    this.h=vec4.create(); // used for blinn specular
+    this.sl=vec4.create(); // no specular
+    this.dl=vec4.create(); // no diffuse
+    this.al=vec4.clone(this.ka); // ambient        
+    this.sColor=vec4.create();                
   },
   intensity:function(color,ip){
   }  
@@ -17,22 +23,23 @@ Partrace.Lights.Point=Partrace.Light.extend({
     this._super(parent);
     this.attenuationType='squared';
     this.radius=2;
+    this.shader='blinn';
+    this.intensity=this.intensityBlinnPhong;
   },
-  intensity:function(color,ip){
+  intensityBlinnPhong:function(color,ip){
     if (ip.object instanceof Partrace.Light){
       vec4.copy(color,this.kd);
       return this;
     }
 
-    var sh=0;
-    var a=1;
+    var sh=0; // default shine
+    var a=1; // default alpha
     var mat=ip.object.material;
-    if (mat){
+    if (mat){ // use material values if available
       sh=mat.shiny;
       a=mat.d[3];
     }
-      
-    var l=vec4.create(); // light vector
+    var l = this.l;
     vec4.subtract(l,this.position,ip.ip);
     var dist2=vec4.sqrLen(l);
     var dn=1/Math.sqrt(dist2);
@@ -40,65 +47,92 @@ Partrace.Lights.Point=Partrace.Light.extend({
     var dist=dist2*dn;
     
     var ldotn=vec4.dot(l,ip.n);
-    if (ldotn<=0) return;
+    var intensity=Math.saturate(ldotn);
+      
+    var al=this.al;
+    var dl=this.dl;
+    var sl=this.sl;
+
+    if (mat){
+      vec4.add(al,this.ka,mat.a); // add light ambient with material
+      vec4.multiply(dl,this.kd,mat.d); // combine light diffuse with material      
+    }else{
+      vec4.copy(al,this.ka);
+      vec4.copy(dl,this.kd); 
+    }
+    vec4.copy(sl,this.ks); // start with light specular
     
-    var sl=vec4.create(); // no specular
-    var dl=vec4.create(); // no diffuse
-    var al=vec4.clone(this.ka); // ambient    
-    vec4.copy(dl,this.kd); 
+    vec4.scale(dl,dl,intensity); //diffuse color shaded by angle between light and normal
+
     
     var oi=1; //attenuation modifyer for soft shadows and caustics
     
-    if (this.scene.doShadows && !ip.ray.inside){
+    if (this.scene.doShadows && this.castShadows && ip.object.receveShadows && !ip.ray.inside){
       var sRay=new Partrace.Ray('shadow',ip.ip,l);
-      vec4.combine(sRay.p,sRay.p,sRay.d,1,Partrace.epsilon);
+      vec4.project(sRay.p,sRay.p,sRay.d,Partrace.epsilon);
       sRay.depth=ip.ray.depth;
       
       if (this.scene.itersectScene(sRay)){
+        oi=this.ka[0];      
         var smat=sRay.ip.object.material;
         if (smat){
           var sta=smat.getAttrs(sRay.ip.lip);
           if (false && sta.d[3]<1){
             oi=sta.d[3];
-            var sColor=vec4.create();            
-            vec4.scale(sColor,sta.d,oi-smat.reflect);
-            vec4.multiply(dl,dl,sColor);
-          }else{ // end caustic
-            oi=this.ka[0];
-          }
-        }else{ // end smat
-          oi=this.ka[0];
-        }
-      }
-    }
+            vec4.scale(this.sColor,sta.d,oi-smat.reflect);
+            vec4.multiply(dl,dl,this.sColor);
+          } // end caustic
+        } // end smat
+      } // end shadow hit
+    } // end do shadow
     
-    //phong specular
+    // specular
     if (sh>0){
-      var r=vec4.reflect(undefined,l,ip.n); // reflect light around normal
-      vec4.normalize(r,r);
-      var rdotv=vec4.dot(r,ip.ray.d); // angle between camera and reflected light
-      if (rdotv>0){ // specular
-        vec4.copy(sl,this.ks); // start with light specular
-        vec4.multiply(sl,sl,mat.s); // combine material specular
-        vec4.scale(sl,sl,Math.pow(rdotv,sh)); // scale the specular dot by shine level
+      var intensity;
+      var h = this.h;      
+      switch(this.shader){
+        case 'phong':
+          vec4.reflect(h,l,ip.n); // reflect light around normal
+          vec4.normalize(h,h);
+          var rdotv=vec4.dot(h,ip.ray.d); // angle between ray and reflected light
+          intensity=Math.pow(Math.saturate(rdotv),sh);
+          break;
+        case 'blinn':
+          vec4.negate(h,ip.ray.d);
+          vec4.add(h,h,l); // compute half vector;
+          vec4.normalize(h,h);
+          var ndoth=vec4.dot(ip.n,h); // angle between camera and reflected light
+          var intensity=Math.pow(Math.saturate(ndoth),sh);
+          break;
+        case 'beckmann':
+          vec4.negate(h,ip.ray.d);
+          vec4.add(h,h,l); // compute half vector;
+          vec4.normalize(h,h);
+          var ndoth=vec4.dot(ip.n,h); // angle between camera and reflected light
+          if (ndoth<0) ndoth=0;
+          var ndoth2=ndoth*ndoth;
+          var m=(mat ? mat.roughness : 0.5) || 0.5;
+          var m2=m*m;
+          var intensity=Math.exp((ndoth2-1)/(m2*ndoth2)/(Math.PI*m2*ndoth2*ndoth2));
+          break;
+        default: intensity=0;
       }
-    }
+      
+      if (mat) vec4.multiply(sl,sl,mat.s); // combine material specular
+      vec4.scale(sl,sl,intensity); // scale the specular dot by shine level
+      
+    } // end specular
     switch (this.attenuationType){
       case 'none':att=1; break;
-      case 'linear':att=Math.clamp(1-(dist/this.fallOffRadius),0,1); break;
-      case 'squared':att=Math.clamp(1-Math.sqr(dist/this.fallOffRadius),0,1); break;
+      case 'linear':att=Math.saturate(1-(dist/this.fallOffRadius)); break;
+      case 'squared':att=Math.saturate(1-Math.sqr(dist/this.fallOffRadius)); break;
       default: att=1; // no falloff
     }
     
-    vec4.add(al,al,mat.a); // combine material ambient       
-
-    vec4.multiply(dl,dl,mat.d); // combine light diffuse with material
-    vec4.scale(dl,dl,ldotn); //diffuse color shaded by angle between light and normal
-
-    vec4.copy(color,dl); // diffuse
-    vec4.add(color,color,sl) // add specular
-    vec4.scale(color,color,att*oi) // attenuate
-    vec4.add(color,color,al); // add with ambient    
+    vec4.copy(color,dl); // start with diffuse
+    if (sh>0) vec4.add(color,color,sl) // add specular
+    vec4.scale(color,color,att*oi) // attenuate and shadow
+    vec4.add(color,color,al); // add ambient    
     vec4.scale(color,color,a); // apply transparency       
-  }    
+  }
 });

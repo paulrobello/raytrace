@@ -23,23 +23,25 @@ Partrace.Scene=Class.extend({
       objects:0,
       lights:0
     };
-    var stats=this.stats;    
-    
-    stats.rays['total']=0;
-    stats.rays['camera']=0;
-    stats.rays['fog_hit']=0;
-    stats.rays['fog_miss']=0;
-    stats.rays['hit']=0;
-    stats.rays['miss']=0;
     return this;  
   },
+  incStats:function(key,type){
+    var stats=this.stats;
+    if (!stats.rays[key]) stats.rays[key]=0;
+    stats.rays[key]++;
+    if (!type) return;
+    key=key+'_'+type;
+    if (!stats.rays[key]) stats.rays[key]=0;
+    stats.rays[key]++;    
+  },  
   computeStats:function(){
     var stats=this.stats.rays;
     if (!stats.total) return;
     for (var key in stats){
       if (key==="total") continue;
       var new_key=key+"_percent";
-      stats[new_key]=(stats[key]/stats.total*100).toFixed(1);
+      var total=stats[key.replace(/(_hit|_miss)/,'')]||0;
+      if (total) stats[new_key]=(stats[key]/total*100).toFixed(1);
     }
     stats=this.stats;
     stats.objects=this.objects.length;
@@ -59,14 +61,14 @@ Partrace.Scene=Class.extend({
   },
   itersectScene:function(ray){
     var stats=this.stats;
-    if (!stats.rays[ray.type]) stats.rays[ray.type]=0;
-    stats.rays[ray.type]++;
-    stats.rays['total']++;
+    this.incStats(ray.type,'');
+    this.incStats('total','');
     
     var objects=this.objects;
     var i = objects.length;
     var ip=null;
     while (i--){
+      if (ray.type==='shadow' && !objects[i].castShadows) continue;
       if (ip=objects[i].intersect(ray)){
         ray.intersections.push(ip);
       }
@@ -84,14 +86,10 @@ Partrace.Scene=Class.extend({
       ray.ip=false;
     }
     if (ray.intersections.length){
-      stats.rays['hit']++;
-      if (!stats.rays[ray.type+'_hit']) stats.rays[ray.type+'_hit']=0;
-      stats.rays[ray.type+'_hit']++;
+      this.incStats(ray.type,'hit');
       return true;
     }else{
-      if (!stats.rays[ray.type+'_miss']) stats.rays[ray.type+'_miss']=0;
-      stats.rays['miss']++;
-      stats.rays[ray.type+'_miss']++;      
+      this.incStats(ray.type,'miss');    
       return false;
     }
   },
@@ -103,7 +101,6 @@ Partrace.Scene=Class.extend({
     var ip=ray.ip;
     var mat = ip.object.material;
     vec4.set(color,0,0,0,1);
-    //if (!mat) return false;
     
     var ma=mat.d[3]; // alpha    
     var mr=mat.reflect; // reflectance
@@ -122,9 +119,9 @@ Partrace.Scene=Class.extend({
       if (depth<this.maxDepth){
         if (this.doReflect && mr>0 && !ray.inside){
           var rRay=new Partrace.Ray('reflect',ray.p,ray.d);
-          vec4.reflect(rRay.d,rRay.d,ip.n);
+          vec4.reflect(rRay.d,ray.d,ip.n);
           vec4.normalize(rRay.d,rRay.d);
-          vec4.combine(rRay.p,ip.ip,rRay.d,1,Partrace.epsilon);
+          vec4.project(rRay.p,ip.ip,rRay.d,Partrace.epsilon);
           rRay.intensity=ray.intensity*(1-mr);
           rRay.inside=ray.inside;
           var rColor=vec4.create();
@@ -142,7 +139,7 @@ Partrace.Scene=Class.extend({
           var rRay=new Partrace.Ray('refract',ray.p,ray.d);
           var nvec=vec4.clone(ip.n);
           if (ray.inside) vec4.negate(nvec,nvec);
-          var cosi=-vec4.dot(nvec,ray.d);
+          var cosi=-vec4.dot(nvec,rRay.d);
           var cosi2=cosi*cosi;
           var sini=Math.sqrt(1-cosi*cosi);
           var sint=n*sini;
@@ -153,12 +150,12 @@ Partrace.Scene=Class.extend({
             
             vec4.combine(rRay.d,rRay.d,nvec,n,-n*cosi*cost);
             vec4.normalize(rRay.d,rRay.d);
-            vec4.combine(rRay.p,ip.ip,rRay.d,1,Partrace.epsilon);
-            rRay.intensity=ray.intensity*(1-ma);
+            vec4.project(rRay.p,ip.ip,rRay.d,Partrace.epsilon);
+            rRay.intensity=ray.intensity*ma;
             rRay.depth=depth;
             rRay.inside=ray.inside;
             
-            if (ma<1 && this.raytrace(rColor,rRay,depth+1,mir)){ // if alpha is not solid use beers law to compute dufuse color absorbsion
+            if (this.raytrace(rColor,rRay,depth+1,mir)){ // beers law to compute dufuse color absorbsion
               var absorb=vec4.clone(mat.d);
               vec4.scale(absorb,absorb,0.15*-rRay.ip.dist);
               absorb[0]=Math.clamp(Math.exp(absorb[0]),0,1);
@@ -175,9 +172,9 @@ Partrace.Scene=Class.extend({
     vec4.scale(color,color,1/lights.length);
     if (this.fog){
       if (this.fog.calc(color,ip)){
-        this.stats.rays['fog_hit']++;
+        this.incStats('fog','hit');
       }else{
-        this.stats.rays['fog_miss']++;
+        this.incStats('fog','miss');
       }      
     }
     return true;    

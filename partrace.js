@@ -53,6 +53,7 @@ Partrace=Class.extend({
     return this;
   },
   render:function(){
+    var start = new Date().getTime();
     var width=this.width;
     var height=this.height;
     var x=width;
@@ -87,8 +88,10 @@ Partrace=Class.extend({
         that.doProgress(height-y);
         setTimeout(loopFunc);
       }else{
-        that.copyColorToScreen();      
+        that.copyColorToScreen();
+        var end = new Date().getTime();
         that.scene.computeStats();
+        that.scene.stats.renderTime=((end-start)/1000).toFixed(1);
         Partrace.log(that.scene.stats);
       }
     };
@@ -96,25 +99,29 @@ Partrace=Class.extend({
   },
   doProgress:function(y){
     var p=Math.ceil(y/this.height*100);
-//    if (y%32==0) console.log(p);
     $("#progress").progressbar("option", {value:p});
   },
   testScene:function(){ //*********************************//
+    this.camera.setPosition(vec4.fromValues(0,0,-3,1));  
+    this.scene.fog.setNear(0);
+    this.scene.fog.setFar(9);
     var light=new Partrace.Lights.Point();
     light.setPosition(vec4.fromValues(5,5,-5,1));
     light.fallOffRadius=15;
     this.scene.add(light);
+    
     var sphere=new Partrace.Objects.Sphere(null,1);    
     sphere.setPosition(vec4.fromValues(-1.25,0,0,1));
-    sphere.material.reflect=0.5;
+    sphere.material.reflect=0.25;
     vec4.set(sphere.material.d,0.9,0,0,1);
     //vec4.set(sphere.material.a,0.9,0,0,1);
-    sphere.material.shiny=16;
+    sphere.material.shiny=128;
+    sphere.material.metallic=true;
     this.scene.add(sphere);  
     
     var sphere=new Partrace.Objects.Sphere(null,1);
     sphere.setPosition(vec4.fromValues(1.25,0,0,1));
-    sphere.material.reflect=0.5;
+    sphere.material.reflect=0.25;
     vec4.set(sphere.material.d,0.0,0,0.9,1);
     //vec4.set(sphere.material.a,0.9,0,0,1);
     sphere.material.shiny=16;    
@@ -122,7 +129,8 @@ Partrace=Class.extend({
 
     var sphere=new Partrace.Objects.Sphere(null,0.75);
     sphere.setPosition(vec4.fromValues(0.75,-0.25,-1.25,1));
-    sphere.material.refract=1.51714; // glass
+//    sphere.material.refract=1.51714; // glass
+    sphere.material.refract=1.0; 
     vec4.set(sphere.material.d,0.1,0.1,0.1,0.25);
     sphere.material.shiny=64;    
     this.scene.add(sphere);  
@@ -132,15 +140,15 @@ Partrace=Class.extend({
     vec4.set(plane.material.d,0.0,1.0,0.0,1);
     this.scene.add(plane);
           
-    this.camera.setPosition(vec4.fromValues(0,0,-3,1));
+
     this.render();
   }
 });
 Partrace.fixColor=function(color){
-  color[0]=Math.clamp(color[0],0,1)*255;
-  color[1]=Math.clamp(color[1],0,1)*255;
-  color[2]=Math.clamp(color[2],0,1)*255;
-  color[3]=Math.clamp(color[3],0,1)*255;
+  color[0]=Math.saturate(color[0])*255;
+  color[1]=Math.saturate(color[1])*255;
+  color[2]=Math.saturate(color[2])*255;
+  color[3]=Math.saturate(color[3])*255;
 };
 Partrace.log=function(msg){
   if (typeof msg == 'object'){

@@ -1,8 +1,6 @@
 var BaseObj = Class.extend({
   init: function(parent){
     this.parent=parent||null;
-    this.left=vec4.create();    
-    this.right=vec4.create();
     this.up=vec4.create();
     this.direction=vec4.create();
     this.position=vec4.create();
@@ -11,9 +9,9 @@ var BaseObj = Class.extend({
     this.localMatrix=mat4.create();
     this.calculating=false;
     this.scene=null;
+    this.castShadows=true;
+    this.receveShadows=true;
 
-    vec4.negate(this.left,   vec4.XVector);
-    vec4.copy(this.right,    vec4.XVector);
     vec4.copy(this.up,       vec4.YVector);
     vec4.copy(this.direction,vec4.ZVector);
     vec4.copy(this.position, vec4.NullPoint);
@@ -26,7 +24,7 @@ var BaseObj = Class.extend({
   pointTo:function(target){
     this.dirty=true;
     var absDir=vec4.create();
-    vec4.subtract(absDir, target, this.absolutePosition());
+    vec4.subtract(absDir, target, this.getAbsolutePosition());
     vec4.normalize(absDir,absDir);
     var absRight=vec4.create();
     vec4.cross(absRight,absDir, vec4.YVector);
@@ -43,12 +41,18 @@ var BaseObj = Class.extend({
     }
     this.rebuildMatrix();
   },
-  getLeft:function(){
-    vec4.cross(this.left,this.up, this.direction);
+  getRight:function(){
+    if (this.dirty || !this.left){
+      this.left=vec4.create();
+      vec4.cross(this.left,this.up, this.direction);
+    }
     return this.left;
   },
-  getRight:function(){
-    vec4.cross(this.right,this.direction,this.up);
+  getLeft:function(){
+    if (this.dirty || !this.right){
+      this.right=vec4.create();
+      vec4.cross(this.right,this.direction,this.up);
+    }
     return this.right;
   },
   rebuildMatrix:function(){
@@ -103,6 +107,16 @@ var BaseObj = Class.extend({
   },  
   setPosition:function(pos){
     this.dirty=true;
+    pos[3]=1;
+    vec4.copy(this.position,pos);
+    this.rebuildMatrix();
+    return this;
+  },  
+  setPositionXYZ:function(x,y,z){
+    this.dirty=true;
+    pos[0]=x;
+    pos[1]=y;
+    pos[2]=z;
     pos[3]=1;
     vec4.copy(this.position,pos);
     this.rebuildMatrix();

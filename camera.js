@@ -26,7 +26,7 @@ Partrace.Camera=BaseObj.extend({
     var v=vec4.create();
     vec4.subtract(v,u,d);
     var r=vec4.create();
-    vec4.scale(r,this.right,imPlaneUPos);
+    vec4.scale(r,this.getRight(),imPlaneUPos);
     vec4.add(out.d,r,v);
     vec4.normalize(out.d,out.d);
     return out;
