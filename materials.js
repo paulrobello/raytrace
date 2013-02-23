@@ -11,7 +11,7 @@ Partrace.Material=BaseObj.extend({
     this.rotation=vec4.create();
     this.scale=vec4.fromValues(1,1,1,1);
   },
-  getAttrs:function(ip){
+  getAttrs:function(ray){
     return this;
     return {
       'a':this.a,
@@ -20,13 +20,29 @@ Partrace.Material=BaseObj.extend({
       'shiny':this.shiny,
       'reflect':this.reflect
     };
-  }
-  
+  }  
 });
 
+Partrace.Materials.Rainbow=Partrace.Material.extend({
+  init: function(){
+    this._super();
+  },
+  getAttrs:function(ray){
+    var a = this.d[3];
+    vec4.copy(this.d,ray.ip.uvw);
+    vec4.add(this.d,this.d,this.offset);
+    vec4.normalize(this.d,this.d);
+    vec.multiply(this.d,this.d,this.scale);
+    this.d[3]=a;
+    return this;
+  }  
+});
+
+
+
 Partrace.Objects.MaterialObj=BaseObj.extend({
-  init:function(parent,radius){
+  init:function(parent,material){
     this._super(parent);
-    this.material=new Partrace.Material();
+    this.material=material||new Partrace.Material();
   },
 });

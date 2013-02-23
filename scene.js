@@ -141,16 +141,17 @@ Partrace.Scene=Class.extend({
           if (ray.inside) vec4.negate(nvec,nvec);
           var cosi=-vec4.dot(nvec,rRay.d);
           var cosi2=cosi*cosi;
-          var sini=Math.sqrt(1-cosi*cosi);
+          var sini=Math.sqrt(1-cosi2);
           var sint=n*sini;
           var sint2=sint*sint;
-          var rColor=vec4.create();          
+          
           if (sint2<1){
+            var rColor=vec4.create();          
             var cost=Math.sqrt(1-sint2);
             
             vec4.combine(rRay.d,rRay.d,nvec,n,-n*cosi*cost);
             vec4.normalize(rRay.d,rRay.d);
-            vec4.project(rRay.p,ip.ip,rRay.d,Partrace.epsilon);
+            vec4.project(rRay.p,ip.ip,rRay.d,Partrace.epsilon*100);
             rRay.intensity=ray.intensity*ma;
             rRay.depth=depth;
             rRay.inside=ray.inside;
@@ -164,8 +165,9 @@ Partrace.Scene=Class.extend({
               absorb[3]=1;
               vec4.multiply(rColor,rColor,absorb);
             }
+            vec4.add(color,color,rColor);
           }
-          vec4.add(color,color,rColor);
+
         } // end doRefract
       } // end if depth < maxdepth
     } // end while i
@@ -177,6 +179,6 @@ Partrace.Scene=Class.extend({
         this.incStats('fog','miss');
       }      
     }
-    return true;    
+    return true;
   },
 });

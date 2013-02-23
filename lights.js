@@ -76,7 +76,7 @@ Partrace.Lights.Point=Partrace.Light.extend({
         oi=this.ka[0];      
         var smat=sRay.ip.object.material;
         if (smat){
-          var sta=smat.getAttrs(sRay.ip.lip);
+          var sta=smat.getAttrs(sRay);
           if (false && sta.d[3]<1){
             oi=sta.d[3];
             vec4.scale(this.sColor,sta.d,oi-smat.reflect);

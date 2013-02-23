@@ -102,9 +102,10 @@ Partrace=Class.extend({
     $("#progress").progressbar("option", {value:p});
   },
   testScene:function(){ //*********************************//
-    this.camera.setPosition(vec4.fromValues(0,3,-3,1));  
-    this.scene.fog.setNear(0);
+    this.camera.setPosition(vec4.fromValues(0,0,-2,1));  
+    this.scene.fog.setNear(1);
     this.scene.fog.setFar(9);
+    this.scene.fog.setType('linear');
     var light=new Partrace.Lights.Point();
     light.setPosition(vec4.fromValues(5,5,-5,1));
     light.fallOffRadius=15;
@@ -117,22 +118,22 @@ Partrace=Class.extend({
     //vec4.set(sphere.material.a,0.9,0,0,1);
     sphere.material.shiny=128;
     sphere.material.metallic=true;
-    this.scene.add(sphere);  
+//    this.scene.add(sphere);  
     
-    var sphere=new Partrace.Objects.Sphere(null,1);
-    sphere.setPosition(vec4.fromValues(1.25,0,0,1));
-    sphere.material.reflect=0.25;
-    vec4.set(sphere.material.d,0.0,0,0.9,1);
+    var sphere=new Partrace.Objects.Sphere(null,1,new Partrace.Materials.Rainbow());
+    sphere.setPosition(vec4.fromValues(0,0,0,1));
+    sphere.material.reflect=0;
+//    vec4.set(sphere.material.d,0.0,0,0.9,1);
     //vec4.set(sphere.material.a,0.9,0,0,1);
     sphere.material.shiny=16;    
     this.scene.add(sphere);  
 
-    var sphere=new Partrace.Objects.Sphere(null,0.75);
-    sphere.setPosition(vec4.fromValues(0.75,-0.25,-1.25,1));
-//    sphere.material.refract=1.51714; // glass
-    sphere.material.refract=1.0; 
-    vec4.set(sphere.material.d,0.1,0.1,0.1,0.25);
-    sphere.material.shiny=64;    
+    var sphere=new Partrace.Objects.Sphere(null,0.5);
+    sphere.setPosition(vec4.fromValues(0.75,-0.5,-2.0,1));
+    sphere.material.refract=1.51714; // glass
+    sphere.material.reflect=0; 
+    vec4.set(sphere.material.d,1,1,1,0.25);
+    sphere.material.shiny=128;    
 //    this.scene.add(sphere);  
     
     var plane=new Partrace.Objects.Plane(null);
@@ -140,7 +141,6 @@ Partrace=Class.extend({
     vec4.set(plane.material.d,0.0,1.0,0.0,1);
     this.scene.add(plane);
           
-
     this.render();
   }
 });
@@ -159,7 +159,7 @@ Partrace.log=function(msg){
   console.log(msg);
 };
 Partrace.bounds=10000;
-Partrace.epsilon=0.00001;
+Partrace.epsilon=0.000001;
 Partrace.Objects={};
 Partrace.Lights={};
 Partrace.Materials={};
