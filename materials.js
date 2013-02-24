@@ -32,7 +32,7 @@ Partrace.Materials.Rainbow=Partrace.Material.extend({
     vec4.copy(this.d,ray.ip.uvw);
     vec4.add(this.d,this.d,this.offset);
     vec4.normalize(this.d,this.d);
-    vec.multiply(this.d,this.d,this.scale);
+    vec4.multiply(this.d,this.d,this.scale);
     this.d[3]=a;
     return this;
   }  
