@@ -56,8 +56,8 @@ Partrace.Objects.Sphere=Partrace.Objects.MaterialObj.extend({
 });
 
 Partrace.Objects.Plane=Partrace.Objects.MaterialObj.extend({
-  init:function(parent,width,height){
-    this._super(parent);        
+  init:function(parent,width,height,material){
+    this._super(parent,material);
     this.width=width||5;
     this.height=height||5;
   },
@@ -95,9 +95,9 @@ Partrace.Objects.Plane=Partrace.Objects.MaterialObj.extend({
   uvw:function(ray){
     var ip = ray.ip;
     if (!ip.uvw) ip.uvw=vec4.create();
-    ip.uvw[0]=1-(ip[0]+this.width/2)/this.width;
-    ip.uvw[1]=  (ip[1]+this.height/2)/this.height;
-    ip.uvw[2]=0;
+    ip.uvw[0]=1-(ip.lip[0]+this.width /2)/this.width;
+    ip.uvw[1]=  (ip.lip[1]+this.height/2)/this.height;
+    ip.uvw[2]=  (ip.lip[2]+this.height/2)/this.height;;
     ip.uvw[3]=1;
     return ip.uvw;
   }      

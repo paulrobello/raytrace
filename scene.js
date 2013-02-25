@@ -10,12 +10,7 @@ Partrace.Scene=Class.extend({
     this.doRefract=true;
     this.doShadows=true;
     this.bg_color=vec4.fromValues(0,0,0,1);    
-    this.fog=new Partrace.Fog(this,this.bg_color,'linear');
-    this.stats = {
-      rays:{},
-      objects:0,
-      lights:0
-    };    
+    this.resetStats();
   },
   resetStats:function(){
     this.stats = {
@@ -33,6 +28,7 @@ Partrace.Scene=Class.extend({
     key=key+'_'+type;
     if (!stats.rays[key]) stats.rays[key]=0;
     stats.rays[key]++;    
+    return this;
   },  
   computeStats:function(){
     var stats=this.stats.rays;
@@ -45,7 +41,8 @@ Partrace.Scene=Class.extend({
     }
     stats=this.stats;
     stats.objects=this.objects.length;
-    stats.lights =this.lights.length;
+    stats.lights=this.lights.length;
+    return this;
   },  
   add:function(obj){
     obj.scene=this;
@@ -91,7 +88,7 @@ Partrace.Scene=Class.extend({
     }else{
       this.incStats(ray.type,'miss');    
       return false;
-    }
+    }    
   },
   raytrace:function(color,ray,depth,ir){
     vec4.copy(color,this.bg_color);
@@ -99,7 +96,7 @@ Partrace.Scene=Class.extend({
     if (!this.itersectScene(ray)) return false;
     
     var ip=ray.ip;
-    var mat = ip.object.material;
+    var mat = ip.object.material.getAttrs(ray);
     vec4.set(color,0,0,0,1);
     
     var ma=mat.d[3]; // alpha    
@@ -167,7 +164,6 @@ Partrace.Scene=Class.extend({
             }
             vec4.add(color,color,rColor);
           }
-
         } // end doRefract
       } // end if depth < maxdepth
     } // end while i
@@ -180,5 +176,5 @@ Partrace.Scene=Class.extend({
       }      
     }
     return true;
-  },
+  }
 });
