@@ -88,7 +88,7 @@ Partrace.Objects.Plane=Partrace.Objects.MaterialObj.extend({
     if (ip.n) {
       vec4.copy(ip.n,this.getAbsoluteUp());
     }else{
-      ip.n=vec4.clone(getAbsoluteUp());
+      ip.n=vec4.clone(this.getAbsoluteUp());
     }
     return ip.n;
   },

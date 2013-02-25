@@ -72,8 +72,7 @@ Partrace=Class.extend({
     camera.setup(width,height);
 
     var ray=new Partrace.Ray('screen');    
-    var that=this;
-    var loopFunc=function(){
+    loopFunc=(function(that){ return function(){
       if (y--){
         while (x--){
           ray.reset();
@@ -93,7 +92,8 @@ Partrace=Class.extend({
         that.scene.stats.renderTime=((end-start)/1000).toFixed(1);
         Partrace.log(that.scene.stats);
       }
-    };
+    }
+    })(this);
     loopFunc();
   },
   doProgress:function(y){

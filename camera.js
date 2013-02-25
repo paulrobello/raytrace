@@ -14,6 +14,10 @@ Partrace.Camera=BaseObj.extend({
     this.focusBlurLevels=3;
     this.focusDist=-0.5;
     this.farFocusDist=0.75;    
+    this.wd=vec4.create(); // working var
+    this.wu=vec4.create(); // working var
+    this.wr=vec4.create(); // working var
+    this.wv=vec4.create(); // working var
   },
   setLook:function(look){
     look[3]=1;
@@ -30,13 +34,13 @@ Partrace.Camera=BaseObj.extend({
     out.copy(this.defaultCameraRay);
     var imPlaneUPos=this.vLeft  +(this.vRight-this.vLeft)  *((x+o[0])/this.width);
     var imPlaneVPos=this.vBottom+(this.vTop  -this.vBottom)*((y+o[1])/this.height);
-    var d=vec4.create();
+    var d=this.wd;
+    var u=this.wu;
+    var r=this.wr;
+    var v=this.wv;
     vec4.negate(d,this.direction);
-    var u=vec4.create();
     vec4.scale(u,this.up,imPlaneVPos);
-    var v=vec4.create();
     vec4.subtract(v,u,d);
-    var r=vec4.create();
     vec4.scale(r,this.getRight(),imPlaneUPos);
     vec4.add(out.d,r,v);
     vec4.normalize(out.d,out.d);
