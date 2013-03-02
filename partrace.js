@@ -102,10 +102,13 @@ Partrace=Class.extend({
   },
   testScene:function(){ //*********************************//
     this.camera.setPosition(vec4.fromValues(0,0,-2.5,1));  
-    this.scene.fog=new Partrace.Fog(this.scene,this.scene.bg_color,'linear');    
-    this.scene.fog.setNear(1);
-    this.scene.fog.setFar(9);
-    this.scene.fog.setType('linear');
+
+    //this.scene.fog=new Partrace.Fog(this.scene,this.scene.bg_color,'linear');    
+    if (this.scene.fog){
+      this.scene.fog.setNear(1);
+      this.scene.fog.setFar(9);
+      this.scene.fog.setType('linear');
+    }
     var light=new Partrace.Lights.Point();
     light.setPosition(vec4.fromValues(5,5,-5,1));
     light.fallOffRadius=15;
@@ -115,7 +118,7 @@ Partrace=Class.extend({
     var sphere=new Partrace.Objects.Sphere(null,1,new Partrace.Materials.Checker());
     vec4.set(sphere.material.scale,0.1,0.1,0.05,1);
     sphere.setPosition(vec4.fromValues(-1.25,0,0,1));
-    sphere.material.reflect=0.25;
+    //sphere.material.reflect=0.25;
     vec4.set(sphere.material.d,0.9,0,0,1);
     //vec4.set(sphere.material.a,0.9,0,0,1);
     sphere.material.shiny=128;
@@ -137,7 +140,7 @@ Partrace=Class.extend({
     sphere.material.reflect=0; 
     vec4.set(sphere.material.d,1,1,1,0.25);
     sphere.material.shiny=128;    
-    this.scene.add(sphere);  
+//    this.scene.add(sphere);  
 
     // checker
     var m1=new Partrace.Materials.Rainbow();
