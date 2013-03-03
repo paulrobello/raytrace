@@ -8,10 +8,6 @@ Partrace=Class.extend({
     this.zBuffer =     this.ctx.createImageData(this.width,this.height);
     this.camera = new Partrace.Camera(this);
     this.scene = new Partrace.Scene(this);
-    this.maxWorkers=1;
-    this.workersDone=0;
-    this.workers=[];
-    this.stats={};
   },
   createBuffer:function(width,height){
     var buffer = document.createElement('canvas');
@@ -60,93 +56,49 @@ Partrace=Class.extend({
     var start = new Date().getTime();
     var width=this.width;
     var height=this.height;
+    var x=width;
+    var y=height;
+    var cb=this.colorBuffer;
+
+    var c_color=vec4.create();
+    var aa_color=vec4.create();
+    var camera=this.camera;
 
     this.scene.resetStats();
     
-    this.clearBuffer(this.colorBuffer);
+    this.clearBuffer(cb);
     this.copyColorToScreen();
-
-    var wy=height/this.maxWorkers;
-    for (var w=0; w<this.maxWorkers; w++){
-      var worker = new Worker('partrace-worker.js');
-      worker.postMessage = worker.webkitPostMessage || worker.postMessage;
-      worker.progress=0;
-      worker.stats={};
-      worker.done=false;
-      worker.addEventListener('message', $.proxy(this, 'onMessage'),false);
-      var sy=wy*w;
-      worker.postMessage({
-        id:w,
-        action:'init',
-        width:width,
-        height:height,
-        startY:sy,
-        endY:sy+wy
-      });
-      this.workers.push(worker);
-    }
-  },
-  onMessage:function(evt){
-    var data=evt.data;
     
-    switch (data.status){
-      case 'setPixel':
-        data=data.parms;
-        this.setPixel(this.colorBuffer,data.x,data.y,data.r,data.g,data.b,data.a);
-      break;
-      case 'setRow':
-        var index = data.y * this.width * 4;
-        data=data.data;
-        var x = this.width;        
+    camera.setup(width,height);
+
+    var ray=new Partrace.Ray('screen');    
+    loopFunc=(function(that){ return function(){
+      if (y--){
         while (x--){
-          var o=x*4;
-          this.colorBuffer.data[index+o  ]=data[o  ];
-          this.colorBuffer.data[index+o+1]=data[o+1];
-          this.colorBuffer.data[index+o+2]=data[o+2];
-          this.colorBuffer.data[index+o+3]=data[o+3];
+          ray.reset();
+          camera.makeCameraRay(ray,x,y,vec4.NullVector);
+          that.scene.raytrace(c_color,ray,0,1);
+          Partrace.fixColor(c_color);          
+          that.setPixel(cb,x,y,c_color[0],c_color[1],c_color[2],c_color[3]);
         }
-      break;
-      case 'stats':
-        this.workers[data.id].stats=data.stats;        
-        data.msg=data.stats;
-        this.mergeStats(data.id);
-      case 'log':
-        Partrace.log(data.msg);
-      break;
-      case 'progress':
-        var w=this.workers[data.id].progress=data.progress;
-        this.doProgress();
-      break;
-      case 'end':
-        this.workers[data.id].done=true;
-        this.workersDone++;
-        if (this.workersDone===this.workers.length) Partrace.log(this.stats);
-        this.copyColorToScreen();
-      break;
-      default:console.log(evt);
-    };
-  },
-  doProgress:function(){
-    var p=0;
-    var i=this.workers.length;
-    while (i--) {
-      p+=this.workers[i].progress/this.workers.length;
+        x=width;
+        if (y%5==0) that.copyColorToScreen();      
+        that.doProgress(height-y);
+        setTimeout(loopFunc,1);
+      }else{
+        that.copyColorToScreen();
+        var end = new Date().getTime();
+        that.scene.computeStats();
+        that.scene.stats.renderTime=((end-start)/1000).toFixed(1);
+        Partrace.log(that.scene.stats);
+      }
     }
+    })(this);
+    loopFunc();
+  },
+  doProgress:function(y){
+    var p=Math.ceil(y/this.height*100);
     $("#progress").progressbar("option", {value:p});
-    if (p%5==0) this.copyColorToScreen();          
-  },
-  mergeStats:function(w){
-    w=this.workers[w];
-    for (var key in w.stats){
-      if (key==="rays") continue;
-      if (!this.stats[key]) this.stats[key]=0;
-      this.stats[key]+=w.stats[key];
-    }
-    this.stats.rays={};
-    for (var key in w.stats.rays){
-      if (!this.stats.rays[key]) this.stats.rays[key]=0;
-      this.stats.rays[key]+=w.stats.rays[key];
-    }
   },
   testScene:function(){ //*********************************//
     this.camera.setPosition(vec4.fromValues(0,0,-2.5,1));  
