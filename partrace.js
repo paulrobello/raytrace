@@ -8,7 +8,7 @@ Partrace=Class.extend({
     this.zBuffer =     this.ctx.createImageData(this.width,this.height);
     this.camera = new Partrace.Camera(this);
     this.scene = new Partrace.Scene(this);
-    this.maxWorkers=1;
+    this.maxWorkers=2;
     this.workersDone=0;
     this.workers=[];
     this.stats={};
@@ -56,15 +56,20 @@ Partrace=Class.extend({
     this.copyBufferToScreen(this.zBuffer);
     return this;
   },
-  render:function(){
+  render:function(setup){
     var start = new Date().getTime();
     var width=this.width;
     var height=this.height;
+
+    setup.width=width;
+    setup.height=height;
 
     this.scene.resetStats();
     
     this.clearBuffer(this.colorBuffer);
     this.copyColorToScreen();
+    
+    var set=$.extend({},setup);
 
     var wy=height/this.maxWorkers;
     for (var w=0; w<this.maxWorkers; w++){
@@ -75,13 +80,12 @@ Partrace=Class.extend({
       worker.done=false;
       worker.addEventListener('message', $.proxy(this, 'onMessage'),false);
       var sy=wy*w;
+      set.startY=sy;
+      set.endY=sy+wy;
+      set.id=w;
       worker.postMessage({
-        id:w,
         action:'init',
-        width:width,
-        height:height,
-        startY:sy,
-        endY:sy+wy
+        setup:set
       });
       this.workers.push(worker);
     }
@@ -137,69 +141,118 @@ Partrace=Class.extend({
   },
   mergeStats:function(w){
     w=this.workers[w];
+    
     for (var key in w.stats){
       if (key==="rays") continue;
       if (!this.stats[key]) this.stats[key]=0;
-      this.stats[key]+=w.stats[key];
+      if (key==="renderTime" || key.indexOf("percent")>0){
+        this.stats[key]+=parseFloat(w.stats[key]);
+      }else{
+        if (!this.stats[key]) this.stats[key]=parseInt(w.stats[key]);
+      }      
     }
     this.stats.rays={};
     for (var key in w.stats.rays){
       if (!this.stats.rays[key]) this.stats.rays[key]=0;
-      this.stats.rays[key]+=w.stats.rays[key];
+      if (key.indexOf("percent")>0){
+        this.stats.rays[key]+=parseFloat(w.stats.rays[key]);
+      }else{
+        this.stats.rays[key]+=parseInt(w.stats.rays[key]);
+      }
     }
   },
-  testScene:function(){ //*********************************//
-    this.camera.setPosition(vec4.fromValues(0,0,-2.5,1));  
-
-    //this.scene.fog=new Partrace.Fog(this.scene,this.scene.bg_color,'linear');    
-    if (this.scene.fog){
-      this.scene.fog.setNear(1);
-      this.scene.fog.setFar(9);
-      this.scene.fog.setType('linear');
+  testScene:function(){ 
+    var setup={
+      scene:{
+        fog:{
+          type:'linear',
+          near:1,
+          far:9
+        },
+        camera:{
+          position:[0,0,-2.5]
+        },
+        lights:[
+          {
+            type:'point',
+            position:[5,5,-5],
+            fallOffRadius:15,
+          }
+        ],
+        materials:[
+          {
+            name:'checker',
+            type:'checker',
+            scale:[0.1,0.1,0.05],
+            //reflect:0.25
+            shiny:128,
+            metallic:true
+          },
+          {
+            name:'blue',
+            type:'basic',
+            diffuse:[0,0,0.9],
+            shiny:16,
+            reflect:0.25
+          },
+          {
+            name:'glass',
+            type:'basic',
+            diffuse:[1],
+            refract:1.51714,//glass
+            shiny:128
+          },
+          {
+            name:'green',
+            type:'basic',
+            diffuse:[0,1,0]            
+          },
+          {
+            name:'rainbow',
+            type:'rainbow'            
+          },
+          {
+            name:'checkermat',
+            type:'checkermat',
+            m1:'rainbow',
+            m2:'green',
+            scale:[0.1,0.1,0.05],
+            duffuse:[0,1,0,]
+          }          
+        ],
+        objects:[        
+          {
+            name:'left Sphere',
+            type:'sphere',
+            material:'checker',
+            radius:1,
+            position:[-1.25,0,0],            
+          },
+          {
+            name:'right Sphere',
+            type:'sphere',
+            material:'blue',
+            radius:1,
+            position:[1.25,0,0]
+          },
+          {
+            name:'glass Sphere',
+            type:'sphere',
+            material:'glass',
+            radius:0.5,
+            position:[0.75,-0.5,-1.25]
+          },
+          {
+            name:'floor Plane',
+            type:'plane',
+            material:'checkermat',
+            position:[0,-1,0],
+          }
+        ]
+      }
     }
-    var light=new Partrace.Lights.Point();
-    light.setPosition(vec4.fromValues(5,5,-5,1));
-    light.fallOffRadius=15;
-    this.scene.add(light);
-    
-    // red
-    var sphere=new Partrace.Objects.Sphere(null,1,new Partrace.Materials.Checker());
-    vec4.set(sphere.material.scale,0.1,0.1,0.05,1);
-    sphere.setPosition(vec4.fromValues(-1.25,0,0,1));
-    //sphere.material.reflect=0.25;
-    vec4.set(sphere.material.d,0.9,0,0,1);
-    //vec4.set(sphere.material.a,0.9,0,0,1);
-    sphere.material.shiny=128;
-    sphere.material.metallic=true;
-    this.scene.add(sphere);  
-    
-    //blue
-    var sphere=new Partrace.Objects.Sphere(null,1);
-    sphere.setPosition(vec4.fromValues(1.25,0,0,1));
-    sphere.material.reflect=0.25;
-    vec4.set(sphere.material.d,0.0,0,0.9,1);
-    sphere.material.shiny=16;    
-    this.scene.add(sphere);  
 
-    // glass
-    var sphere=new Partrace.Objects.Sphere(null,0.5);
-    sphere.setPosition(vec4.fromValues(0.75,-0.5,-1.25,1));
-    sphere.material.refract=1.51714; // glass
-    sphere.material.reflect=0; 
-    vec4.set(sphere.material.d,1,1,1,0.25);
-    sphere.material.shiny=128;    
-//    this.scene.add(sphere);  
-
-    // checker
-    var m1=new Partrace.Materials.Rainbow();
-    var m2=new Partrace.Material(0,1,0);
-    var plane=new Partrace.Objects.Plane(null,5,5,new Partrace.Materials.CheckerMat(m1,m2));
-    plane.setPosition(vec4.fromValues(0,-1,0,1));
-    vec4.set(plane.material.d,0.0,1.0,0.0,1);
-    vec4.set(plane.material.scale,0.1,0.1,0.05,1);
-    this.scene.add(plane);
-          
-    this.render();
+    this.render(setup);
   }
 });
 Partrace.fixColor=function(color){

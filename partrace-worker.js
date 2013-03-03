@@ -24,11 +24,7 @@ self.onmessage=function(event){
 
   var partrace = new Partrace(
     this,
-    event.data.id,
-    event.data.width,
-    event.data.height,
-    event.data.startY,
-    event.data.endY
+    event.data.setup
   );
   partrace.testScene();
 

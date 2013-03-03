@@ -1,14 +1,14 @@
 Partrace=Class.extend({
-  init:function(worker,id,width,height,startY,endY){
+  init:function(worker,setup){
 //    this.worker=worker;
-    this.id=id||0;
-    this.width = width||640;
-    this.height = height||480;
-    this.startY=startY||0;
-    this.endY=endY||this.height;
+    this.id=setup.id||0;
+    this.width = setup.width||640;
+    this.height = setup.height||480;
+    this.startY=setup.startY||0;
+    this.endY=setup.endY||this.height;
     this.camera = new Partrace.Camera(this);
     this.scene = new Partrace.Scene(this);
-    this.buffer=Float32Array ? new Float32Array(this.width*4) : [];
+    this.buffer=Uint32Array ? new Uint32Array(this.width*4) : [];
   },
 
   setPixel:function(x,y,r,g,b,a){
