@@ -1,7 +1,4 @@
-
 self.onmessage=function(event){
-
-
   importScripts(
     "/js/gl-matrix/dist/gl-matrix.js",
     
@@ -10,7 +7,8 @@ self.onmessage=function(event){
     "/utils.js",
 
     "/parmath.js",
-    "/partrace-threaded.js",    
+    "/partrace-threaded.js",
+    
     "/scene.js",
     "/fog.js",
     "/baseobj.js",
@@ -20,12 +18,13 @@ self.onmessage=function(event){
     "/lights.js",
     "/materials.js",
     "/objects.js"
+    
   );
 
   var partrace = new Partrace(
     this,
     event.data.setup
   );
-  partrace.testScene();
+  partrace.doSetup();
 
 };

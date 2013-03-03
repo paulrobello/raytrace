@@ -134,5 +134,32 @@ Partrace.Lights.Point=Partrace.Light.extend({
     vec4.scale(color,color,att*oi) // attenuate and shadow
     vec4.add(color,color,al); // add ambient    
     vec4.scale(color,color,a); // apply transparency       
+  },
+  setDiffuse:function(v){
+    vec4.copy(this.kd,v);
+  },
+  setSpecular:function(v){
+    vec4.copy(this.ks,v);
+  },
+  setAmbient:function(v){
+    vec4.copy(this.ka,v);
+  },  
+  setFalloffRadius:function(v){
+    this.falloffRadius=v;
+  },
+  setAttenuationType:function(v){
+    this.attenuationType=v;
+  },  
+  setShader:function(v){
+    this.shader=v;
+  },  
+  setPropsFromJson:function(json){
+    this._super(json);
+    if (json.diffuse)  this.setDiffuse(Partrace.vToVec4(json.diffuse,1));
+    if (json.specular) this.setSpecular(Partrace.vToVec4(json.specular,1));
+    if (json.ambient)  this.setAmbient(Partrace.vToVec4(json.ambient));    
+    if (json.falloffRadius) this.setFalloffRadius(parseFloat(json.falloffRadius));
+    if (json.attenuationType) this.setattenuationType(json.attenuationType);
+    if (json.shader) this.setShader(json.shader);
   }
 });

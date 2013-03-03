@@ -1,6 +1,7 @@
 Partrace=Class.extend({
   init:function(worker,setup){
-//    this.worker=worker;
+    this.worker=worker||null;
+    this.setup=setup||{};
     this.id=setup.id||0;
     this.width = setup.width||640;
     this.height = setup.height||480;
@@ -9,8 +10,8 @@ Partrace=Class.extend({
     this.camera = new Partrace.Camera(this);
     this.scene = new Partrace.Scene(this);
     this.buffer=Uint32Array ? new Uint32Array(this.width*4) : [];
+    Partrace.scene=this.scene; // used for global lookups
   },
-
   setPixel:function(x,y,r,g,b,a){
     var o=x*4;
     this.buffer[o]=r;
@@ -85,57 +86,61 @@ Partrace=Class.extend({
       progress: p
     });
   },
-  testScene:function(){ //*********************************//
-    this.camera.setPosition(vec4.fromValues(0,0,-2.5,1));  
-
-    //this.scene.fog=new Partrace.Fog(this.scene,this.scene.bg_color,'linear');    
-    if (this.scene.fog){
-      this.scene.fog.setNear(1);
-      this.scene.fog.setFar(9);
-      this.scene.fog.setType('linear');
+  doSetup:function(){ //*********************************//
+    var setup=this.setup;
+    var scene=setup.scene;
+    
+    if (scene.camera) this.camera.setPropsFromJson(scene.camera);
+    if (scene.fog){
+      this.scene.fog=new Partrace.Fog(this.scene,this.scene.bg_color);    
+      this.scene.fog.setPropsFromJson(scene.fog);
     }
-    var light=new Partrace.Lights.Point();
-    light.setPosition(vec4.fromValues(5,5,-5,1));
-    light.fallOffRadius=15;
-    this.scene.add(light);
+    var i=scene.lights.length;
+    while (i--){
+      var light=scene.lights[i];      
+      var newlight=null;
+      switch (light.type){
+        case 'point':newlight=new Partrace.Lights.Point(); break;
+        default:Partrace.log('Unknown light type: '+light.type);
+      }
+      if (newlight){
+        newlight.setPropsFromJson(light);
+        this.scene.add(newlight);
+      }
+    }
+    i=scene.materials.length;
+    while(i--){
+      var mat=scene.materials[i];
+      var newmat=null;
+      switch (mat.type){
+        case 'basic': newmat = new Partrace.Material(); break;
+        case 'checker': newmat = new Partrace.Materials.Checker(); break;
+        case 'chckermat': newmat = new Partrace.Materials.CheckerMat();
+        case 'rainbow': newmat = new Partrace.Materials.Rainbow(); break;
+        case 'combiner': newmat = new new Partrace.Materials.Combiner(); break;
+        default:Partrace.log('Unknown material type: '+mat.type);        
+      }
+      if (newmat){
+        newmat.setPropsFromJson(mat);
+        Partrace.log(newmat);        
+        this.scene.add(newmat);
+      }
+    }
+    i=scene.objects.length;
+    while(i--){
+      var obj=scene.objects[i];
+      var newobj=null;
+      switch (obj.type){
+        case 'sphere':newobj=new Partrace.Objects.Sphere(null,obj.radius,mat);break;
+        case 'plane':newobj=new Partrace.Objects.Plane(null,obj.width,obj.height,mat);        
+        default:Partrace.log('Unknown object type: '+obj.type);
+      }
+      if (newobj){
+        newobj.setPropsFromJson(obj);
+        this.scene.add(newobj);
+      }
+    }
     
-    // red
-    var sphere=new Partrace.Objects.Sphere(null,1,new Partrace.Materials.Checker());
-    vec4.set(sphere.material.scale,0.1,0.1,0.05,1);
-    sphere.setPosition(vec4.fromValues(-1.25,0,0,1));
-    //sphere.material.reflect=0.25;
-    vec4.set(sphere.material.d,0.9,0,0,1);
-    //vec4.set(sphere.material.a,0.9,0,0,1);
-    sphere.material.shiny=128;
-    sphere.material.metallic=true;
-    this.scene.add(sphere);  
-    
-    //blue
-    var sphere=new Partrace.Objects.Sphere(null,1);
-    sphere.setPosition(vec4.fromValues(1.25,0,0,1));
-    sphere.material.reflect=0.25;
-    vec4.set(sphere.material.d,0.0,0,0.9,1);
-    sphere.material.shiny=16;    
-    this.scene.add(sphere);  
-
-    // glass
-    var sphere=new Partrace.Objects.Sphere(null,0.5);
-    sphere.setPosition(vec4.fromValues(0.75,-0.5,-1.25,1));
-    sphere.material.refract=1.51714; // glass
-    sphere.material.reflect=0; 
-    vec4.set(sphere.material.d,1,1,1,0.25);
-    sphere.material.shiny=128;    
-//    this.scene.add(sphere);  
-
-    // checker
-    var m1=new Partrace.Materials.Rainbow();
-    var m2=new Partrace.Material(0,1,0);
-    var plane=new Partrace.Objects.Plane(null,5,5,new Partrace.Materials.CheckerMat(m1,m2));
-    plane.setPosition(vec4.fromValues(0,-1,0,1));
-    vec4.set(plane.material.d,0.0,1.0,0.0,1);
-    vec4.set(plane.material.scale,0.1,0.1,0.05,1);
-    this.scene.add(plane);
-          
     this.render();
   }
 });
@@ -152,6 +157,31 @@ Partrace.fixColor=function(color){
   color[2]=Math.saturate(color[2])*255;
   color[3]=Math.saturate(color[3])*255;
 };
+Partrace.vToBool=function(v){
+  if (v=='true' || v===true || parseInt(v)===1) return true;
+};
+Partrace.vToVec4=function(v,point){
+  if (typeof v === 'string') {
+    v=v.explode(',');
+    var i = v.length;
+    while (i--){
+      v[i]=parseFloat(v[i]);
+    }
+  }
+  console.log(Object.prototype.toString.call( v ));
+  if( Object.prototype.toString.call( v ) === '[object Array]' ){
+    if (v.length===1){
+      return vec4.fromValues(v[0],v[0],v[0],point ? 1 : 0);
+    }else if (v.length===4){
+      return vec4.fromValues(v[0],v[1],v[2],v[3]);
+    }else{
+      return vec4.fromValues(v[0],v[1],v[2],point ? 1 : 0);
+    }
+  }else{
+    v=parseFloat(v);
+    return vec4.fromValues(v,v,v,point ? 1 : 0);
+  }
+}
 
 Partrace.bounds=10000;
 Partrace.epsilon=0.000001;

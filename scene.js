@@ -48,10 +48,14 @@ Partrace.Scene=Class.extend({
     obj.scene=this;
     if (obj instanceof Partrace.Light){
       this.lights.push(obj);      
+      return this.lights.length-1;
+    }else if (obj instanceof Partrace.Material){
+      this.materials.push(obj);
+      return this.materials.length-1;
     }else{
       this.objects.push(obj);
-    }            
-    return this.objects.length-1;
+      return this.objects.length-1;
+    }                
   },
   ipSort:function(a,b){
     return a.dist2-b.dist2;
@@ -176,5 +180,12 @@ Partrace.Scene=Class.extend({
       }      
     }
     return true;
-  }
+  },
+  materialByName:function(name){
+    var i = this.materials.length;
+    while (i--){
+      if (this.materials[i].name===name) return this.materials[i];
+    }
+    return null;
+  }  
 });

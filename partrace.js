@@ -6,9 +6,7 @@ Partrace=Class.extend({
     this.ctx = this.element.getContext("2d");
     this.colorBuffer = this.ctx.createImageData(this.width,this.height); 
     this.zBuffer =     this.ctx.createImageData(this.width,this.height);
-    this.camera = new Partrace.Camera(this);
-    this.scene = new Partrace.Scene(this);
-    this.maxWorkers=2;
+    this.maxWorkers=1;
     this.workersDone=0;
     this.workers=[];
     this.stats={};
@@ -64,8 +62,6 @@ Partrace=Class.extend({
     setup.width=width;
     setup.height=height;
 
-    this.scene.resetStats();
-    
     this.clearBuffer(this.colorBuffer);
     this.copyColorToScreen();
     
@@ -164,11 +160,11 @@ Partrace=Class.extend({
   testScene:function(){ 
     var setup={
       scene:{
-        fog:{
+/*        fog:{
           type:'linear',
           near:1,
           far:9
-        },
+        },*/
         camera:{
           position:[0,0,-2.5]
         },
@@ -176,26 +172,26 @@ Partrace=Class.extend({
           {
             type:'point',
             position:[5,5,-5],
-            fallOffRadius:15,
+            falloffRadius:15,
           }
         ],
         materials:[
-          {
+/*          {
             name:'checker',
             type:'checker',
             scale:[0.1,0.1,0.05],
             //reflect:0.25
             shiny:128,
             metallic:true
-          },
+          },*/
           {
             name:'blue',
             type:'basic',
             diffuse:[0,0,0.9],
             shiny:16,
             reflect:0.25
-          },
-          {
+          }
+/*          {
             name:'glass',
             type:'basic',
             diffuse:[1],
@@ -218,16 +214,16 @@ Partrace=Class.extend({
             m2:'green',
             scale:[0.1,0.1,0.05],
             duffuse:[0,1,0,]
-          }          
+          } */
         ],
         objects:[        
-          {
+/*          {
             name:'left Sphere',
             type:'sphere',
             material:'checker',
             radius:1,
             position:[-1.25,0,0],            
-          },
+          },*/
           {
             name:'right Sphere',
             type:'sphere',
@@ -235,7 +231,7 @@ Partrace=Class.extend({
             radius:1,
             position:[1.25,0,0]
           },
-          {
+/*          {
             name:'glass Sphere',
             type:'sphere',
             material:'glass',
@@ -247,11 +243,10 @@ Partrace=Class.extend({
             type:'plane',
             material:'checkermat',
             position:[0,-1,0],
-          }
+          }*/
         ]
       }
     }
-
     this.render(setup);
   }
 });

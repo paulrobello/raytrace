@@ -118,11 +118,7 @@ var BaseObj = Class.extend({
   },  
   setPositionXYZ:function(x,y,z){
     this.dirty=true;
-    pos[0]=x;
-    pos[1]=y;
-    pos[2]=z;
-    pos[3]=1;
-    vec4.copy(this.position,pos);
+    vec4.copy(this.position,[x,y,z,1]);
     this.rebuildMatrix();
     return this;
   },  
@@ -295,5 +291,17 @@ var BaseObj = Class.extend({
   normal:function(ray){
   },
   uvw:function(ray){
-  }    
+  },
+  setName:function(v){
+    this.name=v||"";
+  },
+  setPropsFromJson:function(json){
+    if (json.name)      this.setName(json.name);      
+    if (json.position)  this.setPosition(Partrace.vToVec4(json.position,1));
+    if (json.direction) this.setDirection(Partrace.vToVec4(json.direction));
+    if (json.up)        this.setUp(Partrace.vToVec4(json.up));    
+    if (json.scale)     this.setScaling(Partrace.vToVec4(json.scale,1));
+    if (json.castShadow)    this.setCastShadow(Partrace.vToBool(json.castShadows));
+    if (json.recieveShadow) this.setCastShadow(Partrace.vToBool(json.recieveShadows));
+  }  
 });

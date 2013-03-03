@@ -51,5 +51,12 @@ Partrace.Fog=Class.extend({
       vec4.combine(color,color,this.color,f,1-f);
     }    
     return true;
-  }  
+  },
+  setPropsFromJson:function(json){
+    if (json.color) this.setColor(Partrace.vToVec4(json.color),1);
+    if (json.near)  this.setNear(parseFloat(json.near));
+    if (json.far)  this.setFar(parseFloat(json.far));
+    if (json.density)  this.setDensity(parseFloat(json.density));
+    if (json.type)  this.setType(json.type);
+  }    
 });
