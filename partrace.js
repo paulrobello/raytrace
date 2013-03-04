@@ -6,7 +6,7 @@ Partrace=Class.extend({
     this.ctx = this.element.getContext("2d");
     this.colorBuffer = this.ctx.createImageData(this.width,this.height); 
     this.zBuffer =     this.ctx.createImageData(this.width,this.height);
-    this.maxWorkers=1;
+    this.maxWorkers=2;
     this.workersDone=0;
     this.workers=[];
     this.stats={};
@@ -159,14 +159,17 @@ Partrace=Class.extend({
   },
   testScene:function(){ 
     var setup={
+      camera:{
+        position:[0,0,-2.5],
+        fov:90
+      },
       scene:{
-/*        fog:{
+        bg_color:[0,0,0],
+        fog:{
+          disabled:true,
           type:'linear',
           near:1,
-          far:9
-        },*/
-        camera:{
-          position:[0,0,-2.5]
+          far:9          
         },
         lights:[
           {
@@ -176,28 +179,36 @@ Partrace=Class.extend({
           }
         ],
         materials:[
-/*          {
+          {
             name:'checker',
             type:'checker',
             scale:[0.1,0.1,0.05],
             //reflect:0.25
             shiny:128,
             metallic:true
-          },*/
+          },
           {
             name:'blue',
             type:'basic',
             diffuse:[0,0,0.9],
             shiny:16,
             reflect:0.25
-          }
-/*          {
+          },
+          {
             name:'glass',
             type:'basic',
-            diffuse:[1],
+            diffuse:[1,1,1,0.25],
             refract:1.51714,//glass
             shiny:128
           },
+          {
+            name:'checkermat',
+            type:'checkermat',
+            diffuse:[0,1,0],
+            diffuse1:'rainbow',
+            diffuse2:'green',
+            scale:[0.1,0.1,0.05]
+          },          
           {
             name:'green',
             type:'basic',
@@ -206,24 +217,16 @@ Partrace=Class.extend({
           {
             name:'rainbow',
             type:'rainbow'            
-          },
-          {
-            name:'checkermat',
-            type:'checkermat',
-            m1:'rainbow',
-            m2:'green',
-            scale:[0.1,0.1,0.05],
-            duffuse:[0,1,0,]
-          } */
+          }
         ],
         objects:[        
-/*          {
+          {
             name:'left Sphere',
             type:'sphere',
             material:'checker',
             radius:1,
-            position:[-1.25,0,0],            
-          },*/
+            position:[-1.25,0,0]
+          },
           {
             name:'right Sphere',
             type:'sphere',
@@ -231,7 +234,8 @@ Partrace=Class.extend({
             radius:1,
             position:[1.25,0,0]
           },
-/*          {
+          {
+            disabled:true,
             name:'glass Sphere',
             type:'sphere',
             material:'glass',
@@ -243,8 +247,8 @@ Partrace=Class.extend({
             type:'plane',
             material:'checkermat',
             position:[0,-1,0],
-          }*/
-        ]
+          }
+        ]        
       }
     }
     this.render(setup);

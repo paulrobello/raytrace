@@ -30,6 +30,22 @@ Partrace.Camera=BaseObj.extend({
     this.look[2]=z;
     return this;
   },
+  setFov:function(v){
+    this.fov=v;
+    return this;
+  },
+  setFocusBlurLevels:function(v){
+    this.focusBlurLevels=v;
+    return this;
+  },
+  setFocusDist:function(v){
+    this.focusDist=v;
+    return this;
+  },
+  setFarFocusDist:function(v){
+    this.farFocusDist=v;
+    return this;
+  },
   makeCameraRay:function(out,x,y,o){
     out.copy(this.defaultCameraRay);
     var imPlaneUPos=this.vLeft  +(this.vRight-this.vLeft)  *((x+o[0])/this.width);
@@ -63,5 +79,13 @@ Partrace.Camera=BaseObj.extend({
     vec4.copy(this.defaultCameraRay.p,this.position);
     vec4.copy(this.defaultCameraRay.d,this.direction);
     return this;
+  },
+  setPropsFromJson:function(json){
+    this._super(json);
+    if (json.fov) this.setFov(parseFloat(json.fov));
+    if (json.focusBlurLevels) this.setFocusBlurLevels(parseFloat(json.focusBlurLevels));
+    if (json.focusDist) this.setFocusDist(parseFloat(json.focusDist));
+    if (json.farFocusDist) this.setFarFocusDist(parseFloat(json.farFocusDist));
+    if (json.look) this.setLook(Partrace.vToVec4(json.look,1));    
   }  
 });

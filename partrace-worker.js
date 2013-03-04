@@ -21,10 +21,7 @@ self.onmessage=function(event){
     
   );
 
-  var partrace = new Partrace(
-    this,
-    event.data.setup
-  );
-  partrace.doSetup();
-
+  var partrace = new Partrace(this);  
+  partrace.setPropsFromJson(event.data.setup);
+  partrace.render();
 };

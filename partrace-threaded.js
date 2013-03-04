@@ -1,16 +1,10 @@
 Partrace=Class.extend({
-  init:function(worker,setup){
-    this.worker=worker||null;
-    this.setup=setup||{};
-    this.id=setup.id||0;
-    this.width = setup.width||640;
-    this.height = setup.height||480;
-    this.startY=setup.startY||0;
-    this.endY=setup.endY||this.height;
+  init:function(worker){
+    this.worker = worker||null;
     this.camera = new Partrace.Camera(this);
-    this.scene = new Partrace.Scene(this);
-    this.buffer=Uint32Array ? new Uint32Array(this.width*4) : [];
-    Partrace.scene=this.scene; // used for global lookups
+    this.scene  = new Partrace.Scene(this);
+    
+    Partrace.scene = this.scene; // used for global lookups   
   },
   setPixel:function(x,y,r,g,b,a){
     var o=x*4;
@@ -39,6 +33,7 @@ Partrace=Class.extend({
   },
   render:function(){
     postMessage({id:this.id,status: 'start'});  
+    this.buffer = Uint8ClampedArray ? new Uint8ClampedArray(this.width*4) : [];  
     var start = new Date().getTime();
     var width=this.width;
     var height=this.height;
@@ -86,62 +81,19 @@ Partrace=Class.extend({
       progress: p
     });
   },
-  doSetup:function(){ //*********************************//
-    var setup=this.setup;
-    var scene=setup.scene;
+  setPropsFromJson:function(json){ //*********************************
+    Partrace.log(json);
+    this.id     = json.id||0;
+    this.width  = json.width||640;
+    this.height = json.height||480;
+    this.startY = json.startY||0;
+    this.endY   = json.endY||this.height;
     
-    if (scene.camera) this.camera.setPropsFromJson(scene.camera);
-    if (scene.fog){
-      this.scene.fog=new Partrace.Fog(this.scene,this.scene.bg_color);    
-      this.scene.fog.setPropsFromJson(scene.fog);
+    if (json.camera) {
+      Partrace.log(json.camera);
+      this.camera.setPropsFromJson(json.camera);
     }
-    var i=scene.lights.length;
-    while (i--){
-      var light=scene.lights[i];      
-      var newlight=null;
-      switch (light.type){
-        case 'point':newlight=new Partrace.Lights.Point(); break;
-        default:Partrace.log('Unknown light type: '+light.type);
-      }
-      if (newlight){
-        newlight.setPropsFromJson(light);
-        this.scene.add(newlight);
-      }
-    }
-    i=scene.materials.length;
-    while(i--){
-      var mat=scene.materials[i];
-      var newmat=null;
-      switch (mat.type){
-        case 'basic': newmat = new Partrace.Material(); break;
-        case 'checker': newmat = new Partrace.Materials.Checker(); break;
-        case 'chckermat': newmat = new Partrace.Materials.CheckerMat();
-        case 'rainbow': newmat = new Partrace.Materials.Rainbow(); break;
-        case 'combiner': newmat = new new Partrace.Materials.Combiner(); break;
-        default:Partrace.log('Unknown material type: '+mat.type);        
-      }
-      if (newmat){
-        newmat.setPropsFromJson(mat);
-        Partrace.log(newmat);        
-        this.scene.add(newmat);
-      }
-    }
-    i=scene.objects.length;
-    while(i--){
-      var obj=scene.objects[i];
-      var newobj=null;
-      switch (obj.type){
-        case 'sphere':newobj=new Partrace.Objects.Sphere(null,obj.radius,mat);break;
-        case 'plane':newobj=new Partrace.Objects.Plane(null,obj.width,obj.height,mat);        
-        default:Partrace.log('Unknown object type: '+obj.type);
-      }
-      if (newobj){
-        newobj.setPropsFromJson(obj);
-        this.scene.add(newobj);
-      }
-    }
-    
-    this.render();
+    if (json.scene) this.scene.setPropsFromJson(json.scene);    
   }
 });
 Partrace.log=function(msg){
@@ -184,7 +136,7 @@ Partrace.vToVec4=function(v,point){
 }
 
 Partrace.bounds=10000;
-Partrace.epsilon=0.000001;
+Partrace.epsilon=0.0001;
 Partrace.Objects={};
 Partrace.Lights={};
 Partrace.Materials={};

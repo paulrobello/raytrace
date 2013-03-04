@@ -184,8 +184,77 @@ Partrace.Scene=Class.extend({
   materialByName:function(name){
     var i = this.materials.length;
     while (i--){
-      if (this.materials[i].name===name) return this.materials[i];
+      if (this.materials[i].name==name) {
+        return this.materials[i];
+      }
     }
     return null;
+  },  
+  setPropsFromJson:function(json){    
+    if (json.bg_color){
+      vec4.copy(this.bg_color,Partrace.vToVec4(json.bg_color,1));
+    }
+    if (json.fog && !json.fog.disabled===true){      
+//      Partrace.log(json.fog);
+      this.fog=new Partrace.Fog(this.scene,this.scene.bg_color);    
+      this.fog.setPropsFromJson(json.fog);
+    }
+    var i=json.lights.length;
+    while (i--){
+      var obj=json.lights[i];
+      if (obj.disabled===true) continue;
+      
+      var newobj=null;
+      
+//      Partrace.log(obj);
+      
+      switch (obj.type){
+        case 'point':newobj=new Partrace.Lights.Point(); break;
+        default:Partrace.log('Unknown light type: '+obj.type);
+      }
+      if (newobj){
+        newobj.setPropsFromJson(obj);
+        this.add(newobj);              
+      }
+    }
+    i=json.materials.length;
+    while(i--){
+      var obj=json.materials[i];
+      if (obj.disabled===true) continue;
+      var newobj=null;
+     
+//      Partrace.log(obj);
+              
+      switch (obj.type){
+        case 'basic': newobj = new Partrace.Material(); break;
+        case 'checker': newobj = new Partrace.Materials.Checker(); break;
+        case 'checkermat': newobj = new Partrace.Materials.CheckerMat(); break;
+        case 'rainbow': newobj = new Partrace.Materials.Rainbow(); break;
+        case 'combiner': newobj = new new Partrace.Materials.Combiner(); break;
+        default:Partrace.log('Unknown material type: '+obj.type);        
+      }
+      if (newobj){
+        newobj.setPropsFromJson(obj);
+        this.add(newobj);              
+      }
+    }
+    i=json.objects.length;
+    while(i--){
+      var obj=json.objects[i];
+      if (obj.disabled===true) continue;
+      var newobj=null;      
+      
+//      Partrace.log(obj);
+
+      switch (obj.type){
+        case 'sphere':newobj=new Partrace.Objects.Sphere(null,obj.radius);break;
+        case 'plane':newobj=new Partrace.Objects.Plane(null,obj.width,obj.height);break;
+        default:Partrace.log('Unknown object type: '+obj.type);
+      }
+      if (newobj){
+        newobj.setPropsFromJson(obj);      
+        this.add(newobj);      
+      }
+    }
   }  
 });

@@ -1,5 +1,6 @@
 Partrace.Material=BaseObj.extend({
   init: function(r,g,b,a){
+    this._super();
     this.name='material';
     this.a=vec4.fromValues(0.0,0.0,0.0,1);
     this.d=vec4.fromValues(
@@ -20,21 +21,27 @@ Partrace.Material=BaseObj.extend({
   },
   setDiffuse:function(v){
     vec4.copy(this.d,v);
+    return this;
   },
   setSpecular:function(v){
     vec4.copy(this.s,v);
+    return this;
   },
   setOffset:function(v){
     vec4.copy(this.offset,v);
+    return this;
   },
   setShiny:function(v){
     this.shiny=v;
+    return this;
   },
   setReflect:function(v){
-    this.shiny=v;
+    this.reflect=v;
+    return this;
   },
   setRefract:function(v){
-    this.shiny=v;
+    this.refract=v;
+    return this;
   },
   setPropsFromJson:function(json){
     this._super(json);
@@ -44,6 +51,7 @@ Partrace.Material=BaseObj.extend({
     if (json.shiny)    this.setShiny(parseFloat(json.shiny));
     if (json.reflect)  this.setReflect(parseFloat(json.reflect));
     if (json.refract)  this.setRefract(parseFloat(json.refract));
+    return this;
   }    
 });
 
@@ -90,11 +98,18 @@ Partrace.Materials.Checker=Partrace.Material.extend({
     return this;
   },
   setDiffuse1:function(v){
+    vec4.copy(this.d1,v);
+    return this;
+  },
+  setDiffuse2:function(v){
+    vec4.copy(this.d2,v);
+    return this;
   },
   setPropsFromJson:function(json){
     this._super(json);
-    if (json.d1)  this.setDiffuse1(Partrace.vToVec4(json.d1,1));    
-    if (json.d2)  this.setDiffuse2(Partrace.vToVec4(json.d2,1));    
+    if (json.diffuse1)  this.setDiffuse1(Partrace.vToVec4(json.diffuse1,1));    
+    if (json.diffuse2)  this.setDiffuse2(Partrace.vToVec4(json.diffuse2,1));    
+    return this;
   }    
 });
 
@@ -129,14 +144,17 @@ Partrace.Materials.CheckerMat=Partrace.Material.extend({
   },
   setDiffuse1:function(v){
     this.d1=v;
+    return this;
   },
   setDiffuse2:function(v){
     this.d2=v;
+    return this;
   },  
   setPropsFromJson:function(json){
     this._super(json);
     if (json.diffuse1) this.setDiffuse1(Partrace.scene.materialByName(json.diffuse1));
     if (json.diffuse2) this.setDiffuse2(Partrace.scene.materialByName(json.diffuse2));
+    return this;
   }
 });
 
@@ -154,14 +172,17 @@ Partrace.Materials.Combiner=Partrace.Material.extend({
   },
   setDiffuse1:function(v){
     this.d1=v;
+    return this;
   },
   setDiffuse2:function(v){
     this.d2=v;
+    return this;
   },  
   setPropsFromJson:function(json){
     this._super(json);
     if (json.diffuse1) this.setDiffuse1(Partrace.scene.materialByName(json.diffuse1));
     if (json.diffuse2) this.setDiffuse2(Partrace.scene.materialByName(json.diffuse2));
+    return this;
   }  
 });
 

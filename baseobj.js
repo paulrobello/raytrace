@@ -186,10 +186,10 @@ var BaseObj = Class.extend({
     }
     return this;
   },
-  setScaling:function(scl){
+  setScale:function(v){
     this.dirty=true;  
-    scl[3]=1;
-    vec4.copy(this.scaling,scl);
+    v[3]=1;
+    vec4.copy(this.scale,v);
     this.rebuildMatrix();
     return this;
   },
@@ -300,7 +300,9 @@ var BaseObj = Class.extend({
     if (json.position)  this.setPosition(Partrace.vToVec4(json.position,1));
     if (json.direction) this.setDirection(Partrace.vToVec4(json.direction));
     if (json.up)        this.setUp(Partrace.vToVec4(json.up));    
-    if (json.scale)     this.setScaling(Partrace.vToVec4(json.scale,1));
+    if (json.scale)     {
+    this.setScale(Partrace.vToVec4(json.scale,1));
+    }
     if (json.castShadow)    this.setCastShadow(Partrace.vToBool(json.castShadows));
     if (json.recieveShadow) this.setCastShadow(Partrace.vToBool(json.recieveShadows));
   }  

@@ -83,7 +83,7 @@ Partrace.Objects.Plane=Partrace.Objects.MaterialObj.extend({
     if (t<=0) return false;
     vec4.combine(ip.lip,ip.lp,ip.ld,1,t);    
     if (this.with!==0 && this.height!==0){
-      if ( (Math.abs(ip.lip[0])>0.5*this.width) || (Math.abs(ip.lip[1])>0.5*this.height) ) return false;
+      if ( (Math.abs(ip.lip[0])>0.5*this.width) || (Math.abs(ip.lip[2])>0.5*this.height) ) return false;
     }
     
     this.localToAbsolute(ip.ip,ip.lip);
