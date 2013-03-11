@@ -166,7 +166,7 @@ Partrace=Class.extend({
       scene:{
         bg_color:[0,0,0],
         fog:{
-          disabled:true,
+          disabled:false,
           type:'linear',
           near:1,
           far:9          
@@ -235,7 +235,7 @@ Partrace=Class.extend({
             position:[1.25,0,0]
           },
           {
-            disabled:true,
+            disabled:false,
             name:'glass Sphere',
             type:'sphere',
             material:'glass',

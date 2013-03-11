@@ -196,7 +196,7 @@ Partrace.Scene=Class.extend({
     }
     if (json.fog && !json.fog.disabled===true){      
 //      Partrace.log(json.fog);
-      this.fog=new Partrace.Fog(this.scene,this.scene.bg_color);    
+      this.fog=new Partrace.Fog(this,this.bg_color);    
       this.fog.setPropsFromJson(json.fog);
     }
     var i=json.lights.length;
