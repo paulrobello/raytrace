@@ -1,12 +1,12 @@
 Partrace=Class.extend({
   init:function(canvas){
     this.element = document.getElementById(canvas);
-    this.width = this.element.width;
+    this.width =  this.element.width;
     this.height = this.element.height;
     this.ctx = this.element.getContext("2d");
     this.colorBuffer = this.ctx.createImageData(this.width,this.height); 
     this.zBuffer =     this.ctx.createImageData(this.width,this.height);
-    this.maxWorkers=2;
+    this.maxWorkers=1;
     this.workersDone=0;
     this.workers=[];
     this.stats={};
@@ -56,11 +56,22 @@ Partrace=Class.extend({
   },
   render:function(setup){
     var start = new Date().getTime();
+    this.workers=[];
+    this.element.width=setup.width||this.element.width;
+    this.element.height=setup.height||this.element.height;
+    
+    this.width =  this.element.width;
+    this.height = this.element.height;
+    this.ctx = this.element.getContext("2d");
+    this.colorBuffer = this.ctx.createImageData(this.width,this.height); 
+    this.zBuffer =     this.ctx.createImageData(this.width,this.height);
+    
     var width=this.width;
     var height=this.height;
 
     setup.width=width;
     setup.height=height;
+    this.maxWorkers=setup.maxWorkers||this.maxWorkers||1;
 
     this.clearBuffer(this.colorBuffer);
     this.copyColorToScreen();
@@ -175,7 +186,7 @@ Partrace=Class.extend({
           {
             type:'point',
             position:[5,5,-5],
-            falloffRadius:15,
+            falloffRadius:25,
           }
         ],
         materials:[
@@ -250,8 +261,9 @@ Partrace=Class.extend({
           }
         ]        
       }
-    }
+    };
     this.render(setup);
+    return setup;
   }
 });
 Partrace.fixColor=function(color){
