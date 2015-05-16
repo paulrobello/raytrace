@@ -71,7 +71,7 @@ Partrace=Class.extend({
 
     setup.width=width;
     setup.height=height;
-    this.maxWorkers=setup.maxWorkers||this.maxWorkers||1;
+    this.maxWorkers=setup.maxWorkers ? setup.maxWorkers : navigator.hardwareConcurrency||1;
 
     this.clearBuffer(this.colorBuffer);
     this.copyColorToScreen();

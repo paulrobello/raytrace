@@ -54,6 +54,16 @@ Partrace=Class.extend({
   },
   render:function(){
     var start = new Date().getTime();
+
+    this.element.width=setup.width||this.element.width;
+    this.element.height=setup.height||this.element.height;
+    
+    this.width =  this.element.width;
+    this.height = this.element.height;
+    this.ctx = this.element.getContext("2d");
+    this.colorBuffer = this.ctx.createImageData(this.width,this.height); 
+    this.zBuffer =     this.ctx.createImageData(this.width,this.height);
+    
     var width=this.width;
     var height=this.height;
     var x=width;
