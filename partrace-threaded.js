@@ -3,74 +3,94 @@ Partrace=Class.extend({
     this.worker = worker||null;
     this.camera = new Partrace.Camera(this);
     this.scene  = new Partrace.Scene(this);
-    
+    this.cBuffer = null;
+    this.zBuffer = null;
     Partrace.scene = this.scene; // used for global lookups   
   },
-  setPixel:function(x,y,r,g,b,a){
+  setPixel:function(x,y,rgba,z){
     var o=x*4;
-    this.buffer[o]=r;
-    this.buffer[o+1]=g;
-    this.buffer[o+2]=b;
-    this.buffer[o+3]=a;
-    
-    if (x==this.width-1){
+    var cBuffer=this.cBuffer;
+    var zBuffer=this.zBuffer;
+    cBuffer[o  ]=rgba[0];
+    cBuffer[o+1]=rgba[1];
+    cBuffer[o+2]=rgba[2];
+    cBuffer[o+3]=rgba[3];
+    if (z===false){
+      zBuffer[x]=-10000;
+    }else{
+      zBuffer[x]=z.dist;
+    }
+        
+    if (x===this.width-1){
       postMessage({
         id:this.id,
         status:'setRow',
         x:0,
         y:y,        
-        data:this.buffer
+        cData:cBuffer,
+        zData:zBuffer
       });
     }
     
     return this;
-    postMessage({
-      id:this.id,
-      status:'setPixel',
-      parms:{x:x,y:y,r:r,g:g,b:b,a:a}
-    });
-    return this;
   },
   render:function(){
     postMessage({id:this.id,status: 'start'});  
-    this.buffer = Uint8ClampedArray ? new Uint8ClampedArray(this.width*4) : [];  
-    var start = new Date().getTime();
+    this.cBuffer = Uint8ClampedArray ? new Uint8ClampedArray(this.width*4) : new Array(this.width*4);  
+    this.zBuffer = Float32Array ? new Float32Array(this.width) : new Array(this.width);  
+    var start = performance.now();
     var width=this.width;
     var height=this.height;
-    var x=width;
-    var y=this.endY;
-
+    var x,y,aao;
+    var startY=this.startY;
+    var endY=this.endY;
+    var aaStep;
+    
     var c_color=vec4.create();
     var aa_color=vec4.create();
     var camera=this.camera;
-
-    this.scene.resetStats();
+    var scene=this.scene;
+    var antiAlias=this.antiAlias;
+    var aaOffs=[[-0.65,-0.75],[0.85,-0.45],[0.35,0.25],[-0.35,0.5],[0,0]];
+    var aaOffsLen=aaOffs.length;
+    var aaDiv=1/aaOffsLen;
     
     camera.setup(width,height);
+    scene.resetStats();        
 
     var ray=new Partrace.Ray('screen');    
-    loopFunc=(function(that){ return function(){
-      if (y-->=that.startY){
-        while (x--){
+    for (y=startY;y<endY;y++){
+      for (x=0;x<width;x++){
+        if (antiAlias){
+          aa_color[0]=0;
+          aa_color[1]=0;
+          aa_color[2]=0;
+          aa_color[3]=0;
+          aaSamps=0;
+          for (aao=0; aao<aaOffsLen; aao++){
+            ray.reset();
+            camera.makeCameraRay(ray,x,y,aaOffs[aao]);
+            scene.raytrace(c_color,ray,0,1);
+            vec4.add(aa_color,aa_color,c_color);
+          }
+          vec4.scale(aa_color,aa_color,aaDiv);
+          Partrace.fixColor(aa_color);
+          this.setPixel(x,y,aa_color,ray.ip);
+        }else{
           ray.reset();
           camera.makeCameraRay(ray,x,y,vec4.NullVector);
-          that.scene.raytrace(c_color,ray,0,1);
+          scene.raytrace(c_color,ray,0,1);
           Partrace.fixColor(c_color);
-          that.setPixel(x,y,c_color[0],c_color[1],c_color[2],c_color[3]);
+          this.setPixel(x,y,c_color,ray.ip);
         }
-        x=width;
-        that.doProgress(height-y);
-        setTimeout(loopFunc,1);
-      }else{
-        var end = new Date().getTime();
-        that.scene.computeStats();
-        that.scene.stats.renderTime=((end-start)/1000).toFixed(1);
-        postMessage({id:that.id,status:'stats',stats:that.scene.stats});
-        postMessage({id:that.id,status:'end'});
       }
+      this.doProgress(y);
     }
-    })(this);
-    loopFunc();
+    var end = performance.now();
+    this.scene.computeStats();
+    this.scene.stats.renderTime=end-start;
+    postMessage({id:this.id,status:'stats',stats:this.scene.stats});
+    postMessage({id:this.id,status:'end'});
   },
   doProgress:function(y){
     y-=this.startY;
@@ -88,6 +108,7 @@ Partrace=Class.extend({
     this.height = json.height||480;
     this.startY = json.startY||0;
     this.endY   = json.endY||this.height;
+    this.antiAlias = json.antiAlias || 0;
     
     if (json.camera) {
       Partrace.log(json.camera);

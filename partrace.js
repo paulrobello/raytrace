@@ -5,11 +5,13 @@ Partrace=Class.extend({
     this.height = this.element.height;
     this.ctx = this.element.getContext("2d");
     this.colorBuffer = this.ctx.createImageData(this.width,this.height); 
-    this.zBuffer =     this.ctx.createImageData(this.width,this.height);
+    this.zColorBuffer =     this.ctx.createImageData(this.width,this.height);
+    this.zBuffer = Float32Array ? new Float32Array(this.width*this.height) : new Array(this.width*this.height);
     this.maxWorkers=1;
     this.workersDone=0;
     this.workers=[];
     this.stats={};
+    this.start_render=0;
   },
   createBuffer:function(width,height){
     var buffer = document.createElement('canvas');
@@ -35,9 +37,8 @@ Partrace=Class.extend({
     );
     return p;
   },
-  clearBuffer:function(buffer,r,g,b,a){
-    var i=this.width*this.height*4;
-    while (i--){
+  clearBuffer:function(buffer,r,g,b,a){    
+    for (var i=0,l=this.width*this.height*4;i<l;i++){
       buffer.data[i]=((i+1)%4===0) ? 255 : 0;
     }  
     return this;
@@ -51,20 +52,62 @@ Partrace=Class.extend({
     return this;
   },
   copyZToScreen:function(){
-    this.copyBufferToScreen(this.zBuffer);
+    this.copyBufferToScreen(this.zColorBuffer);
+    return this;
+  },
+  normalizeZBuffer:function(){
+    var buffer=this.zBuffer;
+    var hv=-10000,lv=10000;
+    for (var i=0,l=buffer.length;i<l;i++){
+      if (buffer[i]===-10000) continue;
+      if (buffer[i]>hv) hv=buffer[i];      
+      if (buffer[i]<lv) lv=buffer[i];      
+    }
+    var r=hv-lv;
+    console.log('zBuffer range l,h,r',lv,hv,r);
+    if (r===0) r=1;    
+    for (var i=0,l=buffer.length;i<l;i++){
+      if (buffer[i]===-10000){
+        //buffer[i]=0;
+      }else{
+        buffer[i]=1.0-Math.saturate((buffer[i]+(-lv))/r);
+      }
+    }
+    return this;
+  },
+  zBufferToColor:function(){
+    var o;
+    var zColor=this.zColorBuffer;
+    var zBuffer=this.zBuffer;
+    for (var x=0,l=zBuffer.length;x<l;x++){
+      o=x*4;
+      if (zBuffer[x]===-10000){
+        zColor.data[o  ]=0;
+        zColor.data[o+1]=0;
+        zColor.data[o+2]=0;
+        zColor.data[o+3]=0;      
+      }else{
+        zColor.data[o  ]=zBuffer[x]*255;
+        zColor.data[o+1]=zBuffer[x]*255;
+        zColor.data[o+2]=zBuffer[x]*255;
+        zColor.data[o+3]=255;
+      }
+    }    
     return this;
   },
   render:function(setup){
-    var start = new Date().getTime();
+    this.start_render = performance.now();
     this.workers=[];
+    this.workersDone=0;
     this.element.width=setup.width||this.element.width;
     this.element.height=setup.height||this.element.height;
     
     this.width =  this.element.width;
     this.height = this.element.height;
     this.ctx = this.element.getContext("2d");
-    this.colorBuffer = this.ctx.createImageData(this.width,this.height); 
-    this.zBuffer =     this.ctx.createImageData(this.width,this.height);
+    this.colorBuffer =  this.ctx.createImageData(this.width,this.height); 
+    this.zColorBuffer = this.ctx.createImageData(this.width,this.height);
+    this.zBuffer = Float32Array ? new Float32Array(this.width*this.height) : new Array(this.width*this.height);
     
     var width=this.width;
     var height=this.height;
@@ -86,6 +129,7 @@ Partrace=Class.extend({
       worker.stats={};
       worker.done=false;
       worker.addEventListener('message', $.proxy(this, 'onMessage'),false);
+      worker.addEventListener('error', $.proxy(this, 'onError'), false);  
       var sy=wy*w;
       set.startY=sy;
       set.endY=sy+wy;
@@ -99,7 +143,7 @@ Partrace=Class.extend({
   },
   onMessage:function(evt){
     var data=evt.data;
-    
+    var cData,zData;
     switch (data.status){
       case 'setPixel':
         data=data.parms;
@@ -107,14 +151,16 @@ Partrace=Class.extend({
       break;
       case 'setRow':
         var index = data.y * this.width * 4;
-        data=data.data;
-        var x = this.width;        
-        while (x--){
-          var o=x*4;
-          this.colorBuffer.data[index+o  ]=data[o  ];
-          this.colorBuffer.data[index+o+1]=data[o+1];
-          this.colorBuffer.data[index+o+2]=data[o+2];
-          this.colorBuffer.data[index+o+3]=data[o+3];
+        var zindex = data.y * this.width;
+        zData=data.zData;
+        cData=data.cData;
+        for (var x=0,l=this.width*4;x<l;x+=4){
+          this.colorBuffer.data[index+x  ]=cData[x  ];
+          this.colorBuffer.data[index+x+1]=cData[x+1];
+          this.colorBuffer.data[index+x+2]=cData[x+2];
+          this.colorBuffer.data[index+x+3]=cData[x+3];          
+          this.zBuffer[zindex+x/4]=zData[x/4];
+          //this.zBuffer[zindex+x/4]=123;
         }
       break;
       case 'stats':
@@ -131,20 +177,30 @@ Partrace=Class.extend({
       case 'end':
         this.workers[data.id].done=true;
         this.workersDone++;
-        if (this.workersDone===this.workers.length) Partrace.log(this.stats);
         this.copyColorToScreen();
+        
+        if (this.workersDone===this.workers.length) {
+          this.normalizeZBuffer();
+          this.zBufferToColor();
+          //this.copyZToScreen();
+          this.start_render = performance.now()-this.start_render;        
+          Partrace.log(this.stats);        
+          Partrace.log('Total render time '+this.start_render+' ms');
+        }
       break;
       default:console.log(evt);
     };
   },
+  onError: function(e) {
+    Partrace.log(['ERROR: Line ', e.lineno, ' in ', e.filename, ': ', e.message].join(''));
+  },
   doProgress:function(){
     var p=0;
-    var i=this.workers.length;
-    while (i--) {
+    for (var i=0,l=this.workers.length;i<l;i++) {
       p+=this.workers[i].progress/this.workers.length;
     }
     $("#progress").progressbar("option", {value:p});
-    if (p%5==0) this.copyColorToScreen();          
+    if (p%5===0) this.copyColorToScreen();          
   },
   mergeStats:function(w){
     w=this.workers[w];
@@ -273,10 +329,10 @@ Partrace.fixColor=function(color){
   color[3]=Math.saturate(color[3])*255;
 };
 Partrace.log=function(msg){
-  if (typeof msg == 'object'){
-    $("#log").prepend(FormatJSON(msg,"  ",0, 2));
+  if (typeof msg === 'object'){
+    $("#log").prepend(FormatJSON(msg,"  ",0, 2)+'<br>');
   }else{
-    $("#log").prepend(msg);
+    $("#log").prepend(msg+'<br>');
   }
   console.log(msg);
 };

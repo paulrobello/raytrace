@@ -4,14 +4,17 @@
 <title>PARTrace JS</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-<link type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.css" rel="stylesheet" />
+<link type="text/css" href="https://code.jquery.com/ui/1.11.4/themes/ui-lightness/jquery-ui.min.css" rel="stylesheet" />
 <link type="text/css" href="/css/main.css" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+<script src="https://code.jquery.com/jquery-1.12.3.min.js"></script>
+<script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.11.2/lodash.min.js"></script>
 
-<script src="/js/gl-matrix/dist/gl-matrix.js"></script>
+<script src="https://rawgit.com/toji/gl-matrix/master/dist/gl-matrix-min.js"></script>
+
 <script src="/js/class.js"></script>
 <script src="/js/par.js"></script>
+<script src="/parmath.js"></script>
 <script src="/utils.js"></script>
 
 <script src="/partrace.js"></script>
@@ -51,7 +54,7 @@ canvas {
   white-space:pre;
 }
 #script {
-  float:left;
+  border:1px solid black;
 }
 </style>
 <script>
@@ -78,6 +81,14 @@ $(document).ready(function(){
       alert(e);
     }
   });
+  $(".buffer").click(function(){
+    if ($(this).val()==='color'){
+      partrace.copyColorToScreen();
+    }else{
+      partrace.copyZToScreen();
+    }    
+  });
+//  setTimeout(function(){$("#render").click();},1000);
   //partrace.testScene();  
 });
 
@@ -88,11 +99,14 @@ $(document).ready(function(){
   <canvas id="canvas" width="640" height="480"></canvas>
   <div id="progress"></div>  
 </div>
-<textarea id="script" rows="30" cols="80">
+<div style="float:left;">
+  <div><label for="script"><h4>Scene</h4></label></div>
+  <textarea id="script" rows="30" cols="80">
 {
   "maxWorkers":0,
   "width":800,
   "height":600,
+  "antiAlias":1,
   "camera":{
     "position":[0,0,-2.5],
     "fov":90
@@ -193,9 +207,11 @@ $(document).ready(function(){
   }
 }
 </textarea>
+</div>
 <div id="render" class="button">Render</div>
 <div id="save" class="button">Save</div>
+<label>Color</label><input type="radio" class="buffer" value="color" name="buffer" checked>
+<label>ZBuffer</label><input type="radio" class="buffer" value="zbuffer" name="buffer">
 <div id="log"></div>
-
 </body>
 </html>

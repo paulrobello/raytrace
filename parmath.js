@@ -1,17 +1,23 @@
 self.Math.degToRad = self.Math.degToRad || function(d){
-  return d*(Math.PI/180);
+  return d*(Math.PI/180.0);
 };
 self.Math.radToDeg = self.Math.radToDeg || function(r){
-  return r*(180/Math.PI);
+  return r*(180.0/Math.PI);
 };
 self.Math.clamp = self.Math.clamp || function(v,l,h){
- if (v<l) return l;
- if (v>h) return h;
+ if (v<l) {
+  return l;
+ }else if (v>h) {
+  return h;
+ }
  return v;
 };
 self.Math.saturate = self.Math.saturate || function(v){
- if (v<0) return 0;
- if (v>1) return 1;
+ if (v<0) {
+  return 0;
+ }else if (v>1) {
+  return 1;
+ }
  return v;
 };
 self.Math.sqr = self.Math.sqr || function(v){

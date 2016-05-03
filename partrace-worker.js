@@ -1,7 +1,6 @@
 self.onmessage=function(event){
   importScripts(
-    "/js/gl-matrix/dist/gl-matrix.js",
-    
+    "https://rawgit.com/toji/gl-matrix/master/dist/gl-matrix-min.js",  
     "/js/class.js",
     "/js/par.js",
     "/utils.js",
