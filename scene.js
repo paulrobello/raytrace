@@ -30,13 +30,19 @@ Partrace.Scene=Class.extend({
     stats.rays[key]++;    
     return this;
   },  
-  computeStats:function(){
+  computeStats:function(id){
+    this.stats.id=id;
     var stats=this.stats.rays;
     if (!stats.total) return;
     for (var key in stats){
       if (key==="total") continue;
       var new_key=key+"_percent";
-      var total=stats[key.replace(/(_hit|_miss)/,'')]||0;
+      var total=0;
+      if (key.match(/(_hit|_miss)/)){
+        total=stats[key.replace(/(_hit|_miss)/,'')]||0;
+      }else{
+        total=stats['total'];
+      }
       if (total) stats[new_key]=(stats[key]/total*100).toFixed(1);
     }
     stats=this.stats;
@@ -52,17 +58,15 @@ Partrace.Scene=Class.extend({
     }else if (obj instanceof Partrace.Material){
       this.materials.push(obj);
       return this.materials.length-1;
-    }else{
-      this.objects.push(obj);
-      return this.objects.length-1;
-    }                
+    }
+    this.objects.push(obj);
+    return this.objects.length-1;
   },
   ipSort:function(a,b){
     return a.dist2-b.dist2;
   },
   itersectScene:function(ray){
     var stats=this.stats;
-    this.incStats(ray.type,'');
     this.incStats('total','');
     
     var objects=this.objects;

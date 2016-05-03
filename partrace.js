@@ -10,7 +10,7 @@ Partrace=Class.extend({
     this.maxWorkers=1;
     this.workersDone=0;
     this.workers=[];
-    this.stats={};
+    this.stats={rays:{}};
     this.start_render=0;
   },
   createBuffer:function(width,height){
@@ -160,13 +160,11 @@ Partrace=Class.extend({
           this.colorBuffer.data[index+x+2]=cData[x+2];
           this.colorBuffer.data[index+x+3]=cData[x+3];          
           this.zBuffer[zindex+x/4]=zData[x/4];
-          //this.zBuffer[zindex+x/4]=123;
         }
       break;
       case 'stats':
         this.workers[data.id].stats=data.stats;        
         data.msg=data.stats;
-        this.mergeStats(data.id);
       case 'log':
         Partrace.log(data.msg);
       break;
@@ -182,10 +180,11 @@ Partrace=Class.extend({
         if (this.workersDone===this.workers.length) {
           this.normalizeZBuffer();
           this.zBufferToColor();
-          //this.copyZToScreen();
           this.start_render = performance.now()-this.start_render;        
+          for (var i=0;i<this.workers.length;i++) this.mergeStats(i);
+          this.computeStats();
           Partrace.log(this.stats);        
-          Partrace.log('Total render time '+this.start_render+' ms');
+          Partrace.log('Total render time '+this.start_render.toFixed(2)+' ms');
         }
       break;
       default:console.log(evt);
@@ -200,28 +199,41 @@ Partrace=Class.extend({
       p+=this.workers[i].progress/this.workers.length;
     }
     $("#progress").progressbar("option", {value:p});
-    if (p%5===0) this.copyColorToScreen();          
+    if (p%20===0) this.copyColorToScreen();          
+  },
+  computeStats:function(){
+    var stats=this.stats.rays;
+    if (!stats.total) return;
+    for (var key in stats){
+      if (key==="total") continue;
+      var new_key=key+"_percent";
+      var total=0;
+      if (key.match(/(_hit|_miss)/)){
+        total=stats[key.replace(/(_hit|_miss)/,'')]||0;
+      }else{
+        total=stats['total'];
+      }
+      if (total) stats[new_key]=(stats[key]/total*100).toFixed(1);
+    }
+  
   },
   mergeStats:function(w){
     w=this.workers[w];
     
     for (var key in w.stats){
-      if (key==="rays") continue;
+      if (key==="rays" || key==="renderTime" || key==="id") continue;
       if (!this.stats[key]) this.stats[key]=0;
-      if (key==="renderTime" || key.indexOf("percent")>0){
+      if (key.indexOf("percent")>0){
         this.stats[key]+=parseFloat(w.stats[key]);
       }else{
         if (!this.stats[key]) this.stats[key]=parseInt(w.stats[key]);
       }      
     }
-    this.stats.rays={};
+    //this.stats.rays={};
     for (var key in w.stats.rays){
+      if (key.indexOf("percent")>0) continue;
       if (!this.stats.rays[key]) this.stats.rays[key]=0;
-      if (key.indexOf("percent")>0){
-        this.stats.rays[key]+=parseFloat(w.stats.rays[key]);
-      }else{
-        this.stats.rays[key]+=parseInt(w.stats.rays[key]);
-      }
+      this.stats.rays[key]+=parseInt(w.stats.rays[key]);
     }
   },
   testScene:function(){ 

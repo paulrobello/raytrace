@@ -87,8 +87,8 @@ Partrace=Class.extend({
       this.doProgress(y);
     }
     var end = performance.now();
-    this.scene.computeStats();
-    this.scene.stats.renderTime=end-start;
+    this.scene.computeStats(this.id);
+    this.scene.stats.renderTime=(end-start).toFixed(2);
     postMessage({id:this.id,status:'stats',stats:this.scene.stats});
     postMessage({id:this.id,status:'end'});
   },

@@ -54,7 +54,7 @@ Partrace.Camera=BaseObj.extend({
     var u=this.wu;
     var r=this.wr;
     var v=this.wv;
-    vec4.negate(d,this.direction);
+    //vec4.negate(d,this.direction);// moved to setup
     vec4.scale(u,this.up,imPlaneVPos);
     vec4.subtract(v,u,d);
     vec4.scale(r,this.getRight(),imPlaneUPos);
@@ -78,6 +78,8 @@ Partrace.Camera=BaseObj.extend({
     this.defaultCameraRay=new Partrace.Ray('camera');
     vec4.copy(this.defaultCameraRay.p,this.position);
     vec4.copy(this.defaultCameraRay.d,this.direction);
+    
+    vec4.negate(this.wd,this.direction);
     return this;
   },
   setPropsFromJson:function(json){
