@@ -4,7 +4,7 @@ Partrace=Class.extend({
     this.width =  this.element.width;
     this.height = this.element.height;
     this.ctx = this.element.getContext("2d");
-    this.colorBuffer = this.ctx.createImageData(this.width,this.height); 
+    this.colorBuffer = this.ctx.createImageData(this.width,this.height);
     this.zColorBuffer =     this.ctx.createImageData(this.width,this.height);
     this.zBuffer = Float32Array ? new Float32Array(this.width*this.height) : new Array(this.width*this.height);
     this.maxWorkers=1;
@@ -37,14 +37,14 @@ Partrace=Class.extend({
     );
     return p;
   },
-  clearBuffer:function(buffer,r,g,b,a){    
+  clearBuffer:function(buffer,r,g,b,a){
     for (var i=0,l=this.width*this.height*4;i<l;i++){
       buffer.data[i]=((i+1)%4===0) ? 255 : 0;
-    }  
+    }
     return this;
   },
   copyBufferToScreen:function(buffer){
-    this.ctx.putImageData( buffer, 0, 0 );  
+    this.ctx.putImageData( buffer, 0, 0 );
     return this;
   },
   copyColorToScreen:function(){
@@ -60,12 +60,12 @@ Partrace=Class.extend({
     var hv=-10000,lv=10000;
     for (var i=0,l=buffer.length;i<l;i++){
       if (buffer[i]===-10000) continue;
-      if (buffer[i]>hv) hv=buffer[i];      
-      if (buffer[i]<lv) lv=buffer[i];      
+      if (buffer[i]>hv) hv=buffer[i];
+      if (buffer[i]<lv) lv=buffer[i];
     }
     var r=hv-lv;
     console.log('zBuffer range l,h,r',lv,hv,r);
-    if (r===0) r=1;    
+    if (r===0) r=1;
     for (var i=0,l=buffer.length;i<l;i++){
       if (buffer[i]===-10000){
         //buffer[i]=0;
@@ -85,14 +85,14 @@ Partrace=Class.extend({
         zColor.data[o  ]=0;
         zColor.data[o+1]=0;
         zColor.data[o+2]=0;
-        zColor.data[o+3]=0;      
+        zColor.data[o+3]=0;
       }else{
         zColor.data[o  ]=zBuffer[x]*255;
         zColor.data[o+1]=zBuffer[x]*255;
         zColor.data[o+2]=zBuffer[x]*255;
         zColor.data[o+3]=255;
       }
-    }    
+    }
     return this;
   },
   render:function(setup){
@@ -101,14 +101,14 @@ Partrace=Class.extend({
     this.workersDone=0;
     this.element.width=setup.width||this.element.width;
     this.element.height=setup.height||this.element.height;
-    
+
     this.width =  this.element.width;
     this.height = this.element.height;
     this.ctx = this.element.getContext("2d");
-    this.colorBuffer =  this.ctx.createImageData(this.width,this.height); 
+    this.colorBuffer =  this.ctx.createImageData(this.width,this.height);
     this.zColorBuffer = this.ctx.createImageData(this.width,this.height);
     this.zBuffer = Float32Array ? new Float32Array(this.width*this.height) : new Array(this.width*this.height);
-    
+
     var width=this.width;
     var height=this.height;
 
@@ -118,7 +118,7 @@ Partrace=Class.extend({
 
     this.clearBuffer(this.colorBuffer);
     this.copyColorToScreen();
-    
+
     var set=$.extend({},setup);
 
     var wy=height/this.maxWorkers;
@@ -129,7 +129,7 @@ Partrace=Class.extend({
       worker.stats={};
       worker.done=false;
       worker.addEventListener('message', $.proxy(this, 'onMessage'),false);
-      worker.addEventListener('error', $.proxy(this, 'onError'), false);  
+      worker.addEventListener('error', $.proxy(this, 'onError'), false);
       var sy=wy*w;
       set.startY=sy;
       set.endY=sy+wy;
@@ -158,12 +158,12 @@ Partrace=Class.extend({
           this.colorBuffer.data[index+x  ]=cData[x  ];
           this.colorBuffer.data[index+x+1]=cData[x+1];
           this.colorBuffer.data[index+x+2]=cData[x+2];
-          this.colorBuffer.data[index+x+3]=cData[x+3];          
+          this.colorBuffer.data[index+x+3]=cData[x+3];
           this.zBuffer[zindex+x/4]=zData[x/4];
         }
       break;
       case 'stats':
-        this.workers[data.id].stats=data.stats;        
+        this.workers[data.id].stats=data.stats;
         data.msg=data.stats;
       case 'log':
         Partrace.log(data.msg);
@@ -176,14 +176,14 @@ Partrace=Class.extend({
         this.workers[data.id].done=true;
         this.workersDone++;
         this.copyColorToScreen();
-        
+
         if (this.workersDone===this.workers.length) {
           this.normalizeZBuffer();
           this.zBufferToColor();
-          this.start_render = performance.now()-this.start_render;        
+          this.start_render = performance.now()-this.start_render;
           for (var i=0;i<this.workers.length;i++) this.mergeStats(i);
           this.computeStats();
-          Partrace.log(this.stats);        
+          Partrace.log(this.stats);
           Partrace.log('Total render time '+this.start_render.toFixed(2)+' ms');
         }
       break;
@@ -199,13 +199,13 @@ Partrace=Class.extend({
       p+=this.workers[i].progress/this.workers.length;
     }
     $("#progress").progressbar("option", {value:p});
-    if (p%20===0) this.copyColorToScreen();          
+    if (p%20===0) this.copyColorToScreen();
   },
   computeStats:function(){
     var stats=this.stats.rays;
     if (!stats.total) return;
     for (var key in stats){
-      if (key==="total") continue;
+      if (key==="total" || key.indexOf('_percent')>-1) continue;
       var new_key=key+"_percent";
       var total=0;
       if (key.match(/(_hit|_miss)/)){
@@ -215,11 +215,11 @@ Partrace=Class.extend({
       }
       if (total) stats[new_key]=(stats[key]/total*100).toFixed(1);
     }
-  
+
   },
   mergeStats:function(w){
     w=this.workers[w];
-    
+
     for (var key in w.stats){
       if (key==="rays" || key==="renderTime" || key==="id") continue;
       if (!this.stats[key]) this.stats[key]=0;
@@ -227,7 +227,7 @@ Partrace=Class.extend({
         this.stats[key]+=parseFloat(w.stats[key]);
       }else{
         if (!this.stats[key]) this.stats[key]=parseInt(w.stats[key]);
-      }      
+      }
     }
     //this.stats.rays={};
     for (var key in w.stats.rays){
@@ -236,7 +236,7 @@ Partrace=Class.extend({
       this.stats.rays[key]+=parseInt(w.stats.rays[key]);
     }
   },
-  testScene:function(){ 
+  testScene:function(){
     var setup={
       camera:{
         position:[0,0,-2.5],
@@ -245,10 +245,10 @@ Partrace=Class.extend({
       scene:{
         bg_color:[0,0,0],
         fog:{
-          disabled:false,
+          disabled:true,
           type:'linear',
           near:1,
-          far:9          
+          far:9
         },
         lights:[
           {
@@ -287,18 +287,18 @@ Partrace=Class.extend({
             diffuse1:'rainbow',
             diffuse2:'green',
             scale:[0.1,0.1,0.05]
-          },          
+          },
           {
             name:'green',
             type:'basic',
-            diffuse:[0,1,0]            
+            diffuse:[0,1,0]
           },
           {
             name:'rainbow',
-            type:'rainbow'            
+            type:'rainbow'
           }
         ],
-        objects:[        
+        objects:[
           {
             name:'left Sphere',
             type:'sphere',
@@ -327,7 +327,7 @@ Partrace=Class.extend({
             material:'checkermat',
             position:[0,-1,0],
           }
-        ]        
+        ]
       }
     };
     this.render(setup);
@@ -342,7 +342,7 @@ Partrace.fixColor=function(color){
 };
 Partrace.log=function(msg){
   if (typeof msg === 'object'){
-    $("#log").prepend(FormatJSON(msg,"  ",0, 2)+'<br>');
+    $("#log").prepend(JSON.stringify(msg,null, 2)+'<br>');
   }else{
     $("#log").prepend(msg+'<br>');
   }
