@@ -5,7 +5,7 @@ Partrace=Class.extend({
     this.scene  = new Partrace.Scene(this);
     this.cBuffer = null;
     this.zBuffer = null;
-    Partrace.scene = this.scene; // used for global lookups   
+    Partrace.scene = this.scene; // used for global lookups
   },
   setPixel:function(x,y,rgba,z){
     var o=x*4;
@@ -20,24 +20,24 @@ Partrace=Class.extend({
     }else{
       zBuffer[x]=z.dist;
     }
-        
+
     if (x===this.width-1){
       postMessage({
         id:this.id,
         status:'setRow',
         x:0,
-        y:y,        
+        y:y,
         cData:cBuffer,
         zData:zBuffer
       });
     }
-    
+
     return this;
   },
   render:function(){
-    postMessage({id:this.id,status: 'start'});  
-    this.cBuffer = Uint8ClampedArray ? new Uint8ClampedArray(this.width*4) : new Array(this.width*4);  
-    this.zBuffer = Float32Array ? new Float32Array(this.width) : new Array(this.width);  
+    postMessage({id:this.id,status: 'start'});
+    this.cBuffer = Uint8ClampedArray ? new Uint8ClampedArray(this.width*4) : new Array(this.width*4);
+    this.zBuffer = Float32Array ? new Float32Array(this.width) : new Array(this.width);
     var start = performance.now();
     var width=this.width;
     var height=this.height;
@@ -45,7 +45,7 @@ Partrace=Class.extend({
     var startY=this.startY;
     var endY=this.endY;
     var aaStep;
-    
+
     var c_color=vec4.create();
     var aa_color=vec4.create();
     var camera=this.camera;
@@ -54,11 +54,11 @@ Partrace=Class.extend({
     var aaOffs=[[-0.65,-0.75],[0.85,-0.45],[0.35,0.25],[-0.35,0.5],[0,0]];
     var aaOffsLen=aaOffs.length;
     var aaDiv=1/aaOffsLen;
-    
-    camera.setup(width,height);
-    scene.resetStats();        
 
-    var ray=new Partrace.Ray('screen');    
+    camera.setup(width,height);
+    scene.resetStats();
+
+    var ray=new Partrace.Ray('screen');
     for (y=startY;y<endY;y++){
       for (x=0;x<width;x++){
         if (antiAlias){
@@ -109,12 +109,11 @@ Partrace=Class.extend({
     this.startY = json.startY||0;
     this.endY   = json.endY||this.height;
     this.antiAlias = json.antiAlias || 0;
-    
+
     if (json.camera) {
-      Partrace.log(json.camera);
       this.camera.setPropsFromJson(json.camera);
     }
-    if (json.scene) this.scene.setPropsFromJson(json.scene);    
+    if (json.scene) this.scene.setPropsFromJson(json.scene);
   }
 });
 Partrace.log=function(msg){
@@ -141,7 +140,7 @@ Partrace.vToVec4=function(v,point){
       v[i]=parseFloat(v[i]);
     }
   }
-  console.log(Object.prototype.toString.call( v ));
+  //console.log(Object.prototype.toString.call( v ));
   if( Object.prototype.toString.call( v ) === '[object Array]' ){
     if (v.length===1){
       return vec4.fromValues(v[0],v[0],v[0],point ? 1 : 0);
