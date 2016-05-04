@@ -2,14 +2,15 @@ Partrace.Scene=Class.extend({
   init:function(partrace){
     this.partrace=partrace;
     this.camera=partrace.camera;
-    this.lights=[];    
+    this.lights=[];
     this.objects=[];
     this.materials=[];
     this.maxDepth=3;
     this.doReflect=true;
     this.doRefract=true;
     this.doShadows=true;
-    this.bg_color=vec4.fromValues(0,0,0,1);    
+    this.bg_color=vec4.fromValues(0,0,0,1);
+    this.fog=null;
     this.resetStats();
   },
   resetStats:function(){
@@ -18,7 +19,7 @@ Partrace.Scene=Class.extend({
       objects:0,
       lights:0
     };
-    return this;  
+    return this;
   },
   incStats:function(key,type){
     var stats=this.stats;
@@ -27,9 +28,9 @@ Partrace.Scene=Class.extend({
     if (!type) return;
     key=key+'_'+type;
     if (!stats.rays[key]) stats.rays[key]=0;
-    stats.rays[key]++;    
+    stats.rays[key]++;
     return this;
-  },  
+  },
   computeStats:function(id){
     this.stats.id=id;
     var stats=this.stats.rays;
@@ -49,11 +50,11 @@ Partrace.Scene=Class.extend({
     stats.objects=this.objects.length;
     stats.lights=this.lights.length;
     return this;
-  },  
+  },
   add:function(obj){
     obj.scene=this;
     if (obj instanceof Partrace.Light){
-      this.lights.push(obj);      
+      this.lights.push(obj);
       return this.lights.length-1;
     }else if (obj instanceof Partrace.Material){
       this.materials.push(obj);
@@ -68,7 +69,7 @@ Partrace.Scene=Class.extend({
   itersectScene:function(ray){
     var stats=this.stats;
     this.incStats('total','');
-    
+
     var objects=this.objects;
     var i = objects.length;
     var ip=null;
@@ -94,20 +95,20 @@ Partrace.Scene=Class.extend({
       this.incStats(ray.type,'hit');
       return true;
     }else{
-      this.incStats(ray.type,'miss');    
+      this.incStats(ray.type,'miss');
       return false;
-    }    
+    }
   },
   raytrace:function(color,ray,depth,ir){
     vec4.copy(color,this.bg_color);
     if (depth>this.maxDepth) return false;
     if (!this.itersectScene(ray)) return false;
-    
+
     var ip=ray.ip;
     var mat = ip.object.material.getAttrs(ray);
     vec4.set(color,0,0,0,1);
-    
-    var ma=mat.d[3]; // alpha    
+
+    var ma=mat.d[3]; // alpha
     var mr=mat.reflect; // reflectance
     var mir=mat.refract; // index of refraction
 
@@ -118,7 +119,7 @@ Partrace.Scene=Class.extend({
     var reflectColor=vec4.create();
     var refractColor=vec4.create();
     while (i--){
-      var light=lights[i];      
+      var light=lights[i];
       light.intensity(lightColor,ip);
       vec4.add(color,color,lightColor);
       if (depth<this.maxDepth){
@@ -149,18 +150,18 @@ Partrace.Scene=Class.extend({
           var sini=Math.sqrt(1-cosi2);
           var sint=n*sini;
           var sint2=sint*sint;
-          
+
           if (sint2<1){
-            var rColor=vec4.create();          
+            var rColor=vec4.create();
             var cost=Math.sqrt(1-sint2);
-            
+
             vec4.combine(rRay.d,rRay.d,nvec,n,-n*cosi*cost);
             vec4.normalize(rRay.d,rRay.d);
             vec4.project(rRay.p,ip.ip,rRay.d,Partrace.epsilon*100);
             rRay.intensity=ray.intensity*ma;
             rRay.depth=depth;
             rRay.inside=ray.inside;
-            
+
             if (this.raytrace(rColor,rRay,depth+1,mir)){ // beers law to compute dufuse color absorbsion
               var absorb=vec4.clone(mat.d);
               vec4.scale(absorb,absorb,0.15*-rRay.ip.dist);
@@ -181,7 +182,7 @@ Partrace.Scene=Class.extend({
         this.incStats('fog','hit');
       }else{
         this.incStats('fog','miss');
-      }      
+      }
     }
     return true;
   },
@@ -193,32 +194,31 @@ Partrace.Scene=Class.extend({
       }
     }
     return null;
-  },  
-  setPropsFromJson:function(json){    
+  },
+  setPropsFromJson:function(json){
     if (json.bg_color){
       vec4.copy(this.bg_color,Partrace.vToVec4(json.bg_color,1));
     }
-    if (json.fog && !json.fog.disabled===true){      
-//      Partrace.log(json.fog);
-      this.fog=new Partrace.Fog(this,this.bg_color);    
+    if (json.fog && json.fog.disabled===false){
+      this.fog=new Partrace.Fog(this,this.bg_color);
       this.fog.setPropsFromJson(json.fog);
+    }else{
+      this.fog=null;
     }
     var i=json.lights.length;
     while (i--){
       var obj=json.lights[i];
       if (obj.disabled===true) continue;
-      
+
       var newobj=null;
-      
-//      Partrace.log(obj);
-      
+
       switch (obj.type){
         case 'point':newobj=new Partrace.Lights.Point(); break;
         default:Partrace.log('Unknown light type: '+obj.type);
       }
       if (newobj){
         newobj.setPropsFromJson(obj);
-        this.add(newobj);              
+        this.add(newobj);
       }
     }
     i=json.materials.length;
@@ -226,29 +226,25 @@ Partrace.Scene=Class.extend({
       var obj=json.materials[i];
       if (obj.disabled===true) continue;
       var newobj=null;
-     
-//      Partrace.log(obj);
-              
+
       switch (obj.type){
         case 'basic': newobj = new Partrace.Material(); break;
         case 'checker': newobj = new Partrace.Materials.Checker(); break;
         case 'checkermat': newobj = new Partrace.Materials.CheckerMat(); break;
         case 'rainbow': newobj = new Partrace.Materials.Rainbow(); break;
         case 'combiner': newobj = new new Partrace.Materials.Combiner(); break;
-        default:Partrace.log('Unknown material type: '+obj.type);        
+        default:Partrace.log('Unknown material type: '+obj.type);
       }
       if (newobj){
         newobj.setPropsFromJson(obj);
-        this.add(newobj);              
+        this.add(newobj);
       }
     }
     i=json.objects.length;
     while(i--){
       var obj=json.objects[i];
       if (obj.disabled===true) continue;
-      var newobj=null;      
-      
-//      Partrace.log(obj);
+      var newobj=null;
 
       switch (obj.type){
         case 'sphere':newobj=new Partrace.Objects.Sphere(null,obj.radius);break;
@@ -256,9 +252,9 @@ Partrace.Scene=Class.extend({
         default:Partrace.log('Unknown object type: '+obj.type);
       }
       if (newobj){
-        newobj.setPropsFromJson(obj);      
-        this.add(newobj);      
+        newobj.setPropsFromJson(obj);
+        this.add(newobj);
       }
     }
-  }  
+  }
 });
