@@ -103,10 +103,10 @@ Partrace.Scene = Class.extend({
     vec4.copy(color, this.bg_color);
     if (depth > this.maxDepth) return false;
     if (!this.itersectScene(ray)) return false;
+    vec4.set(color, 0, 0, 0, 1);
 
     var ip = ray.ip;
     var mat = ip.object.material.getAttrs(ray);
-    vec4.set(color, 0, 0, 0, 1);
 
     var ma = mat.d[3]; // alpha
     var mr = mat.reflect; // reflectance
@@ -116,8 +116,6 @@ Partrace.Scene = Class.extend({
     var i = lights.length;
 
     var lightColor = vec4.create();
-    var reflectColor = vec4.create();
-    var refractColor = vec4.create();
     while (i--) {
       var light = lights[i];
       light.intensity(lightColor, ip);
@@ -141,38 +139,36 @@ Partrace.Scene = Class.extend({
           vec4.add(color, color, rColor);
         } // end do reflect
         if (this.doRefract && ma < 1) {
+          //debugger;
           var n = ir / mir;
-          var rRay = new Partrace.Ray('refract', ray.p, ray.d);
-          var nvec = vec4.clone(ip.n);
-          if (ray.inside) vec4.negate(nvec, nvec);
-          var cosi = -vec4.dot(nvec, rRay.d);
-          var cosi2 = cosi * cosi;
-          var sini = Math.sqrt(1 - cosi2);
-          var sint = n * sini;
-          var sint2 = sint * sint;
-
-          if (sint2 < 1) {
+          var nvec = ip.n;
+          if (ray.inside) {
+            nvec = vec4.clone(ip.n);
+            vec4.negate(nvec, nvec);
+          }
+          var cosI = -vec4.dot(nvec, ray.d);
+          var cosT2 = 1-(n*n)*(1-(cosI*cosI));
+          if (cosT2>0){
+            var rRay = new Partrace.Ray('refract', ray.p, ray.d);
             var rColor = vec4.create();
-            var cost = Math.sqrt(1 - sint2);
-
-            vec4.combine(rRay.d, rRay.d, nvec, n, -n * cosi * cost);
+            vec4.combine(rRay.d, ray.d, nvec, n, n*cosI-Math.sqrt(cosT2));
             vec4.normalize(rRay.d, rRay.d);
-            vec4.project(rRay.p, ip.ip, rRay.d, Partrace.epsilon * 100);
+            vec4.project(rRay.p, ip.ip, rRay.d, 0.01);
             rRay.intensity = ray.intensity * ma;
             rRay.depth = depth;
             rRay.inside = ray.inside;
-
             if (this.raytrace(rColor, rRay, depth + 1, mir)) { // beers law to compute dufuse color absorbsion
               var absorb = vec4.clone(mat.d);
-              vec4.scale(absorb, absorb, 0.15 * -rRay.ip.dist);
+              vec4.scale(absorb, absorb, 0.15 * -Math.abs(ray.ip.dist-rRay.ip.dist));
               absorb[0] = Math.clamp(Math.exp(absorb[0]), 0, 1);
               absorb[1] = Math.clamp(Math.exp(absorb[1]), 0, 1);
               absorb[2] = Math.clamp(Math.exp(absorb[2]), 0, 1);
               absorb[3] = 1;
               vec4.multiply(rColor, rColor, absorb);
+              vec4.multiply(rColor, rColor, mat.d);
+              vec4.add(color, color, rColor);
             }
-            vec4.add(color, color, rColor);
-          }
+          } //cosT2>0
         } // end doRefract
       } // end if depth < maxdepth
     } // end while i
@@ -199,6 +195,8 @@ Partrace.Scene = Class.extend({
     if (json.bg_color) {
       vec4.copy(this.bg_color, Partrace.vToVec4(json.bg_color, 1));
     }
+    if (json.doReflect!==undefined) this.doReflect=json.doReflect;
+    if (json.doRefract!==undefined) this.doRefract=json.doRefract;
     if (json.fog && json.fog.disabled === false) {
       this.fog = new Partrace.Fog(this, this.bg_color);
       this.fog.setPropsFromJson(json.fog);
