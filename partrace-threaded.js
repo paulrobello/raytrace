@@ -51,23 +51,26 @@ Partrace = Class.extend({
     var camera = this.camera;
     var scene = this.scene;
     var antiAlias = this.antiAlias;
-    var aaOffs = [[-0.65, -0.75], [0.85, -0.45], [0.35, 0.25], [-0.35, 0.5], [0, 0]];
+    var aaOffs = [[-0.65, -0.75], [0.85, -0.45], [0.35, 0.25], [-0.35, 0.5]];
     var aaOffsLen = aaOffs.length;
-    var aaDiv = 1 / aaOffsLen;
+    var aaDiv = 1 / (aaOffsLen+1);
+    var aaThresh=0.0001;
 
     var x, y, aao;
 
     camera.setup(width, height);
     scene.resetStats();
+    var lastColor=vec4.create();
 
     var ray = new Partrace.Ray('screen');
     for (y = startY; y < endY; y++) {
       for (x = 0; x < width; x++) {
-        if (antiAlias) {
-          aa_color[0] = 0;
-          aa_color[1] = 0;
-          aa_color[2] = 0;
-          aa_color[3] = 0;
+        ray.reset();
+        camera.makeCameraRay(ray, x, y, vec4.NullVector);
+        scene.raytrace(c_color, ray, 0, 1);
+        if (antiAlias==2 || (antiAlias && (Math.abs(c_color[0]-lastColor[0])>aaThresh||Math.abs(c_color[1]-lastColor[1])>aaThresh||Math.abs(c_color[2]-lastColor[2])>aaThresh))){
+          vec4.copy(lastColor,c_color);
+          vec4.copy(aa_color,c_color);
           for (aao = 0; aao < aaOffsLen; aao++) {
             ray.reset();
             camera.makeCameraRay(ray, x, y, aaOffs[aao]);
@@ -77,13 +80,10 @@ Partrace = Class.extend({
           vec4.scale(aa_color, aa_color, aaDiv);
           Partrace.fixColor(aa_color);
           this.setPixel(x, y, aa_color, ray.ip);
-        } else { // antiAlias
-          ray.reset();
-          camera.makeCameraRay(ray, x, y, vec4.NullVector);
-          scene.raytrace(c_color, ray, 0, 1);
+        }else{
           Partrace.fixColor(c_color);
           this.setPixel(x, y, c_color, ray.ip);
-        } // no antiAlias
+        }
       } // for x
       this.doProgress(y);
     } // for y
@@ -163,7 +163,7 @@ Partrace.vToVec4 = function (v, point) {
 }
 
 Partrace.bounds = 10000;
-Partrace.epsilon = 0.0001;
+Partrace.epsilon = 0.001;
 Partrace.Objects = {};
 Partrace.Lights = {};
 Partrace.Materials = {};
