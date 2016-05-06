@@ -1,162 +1,169 @@
-Partrace=Class.extend({
-  init:function(worker){
-    this.worker = worker||null;
+Partrace = Class.extend({
+  init: function (worker) {
+    this.worker = worker || null;
     this.camera = new Partrace.Camera(this);
-    this.scene  = new Partrace.Scene(this);
+    this.scene = new Partrace.Scene(this);
     this.cBuffer = null;
     this.zBuffer = null;
     Partrace.scene = this.scene; // used for global lookups
   },
-  setPixel:function(x,y,rgba,z){
-    var o=x*4;
-    var cBuffer=this.cBuffer;
-    var zBuffer=this.zBuffer;
-    cBuffer[o  ]=rgba[0];
-    cBuffer[o+1]=rgba[1];
-    cBuffer[o+2]=rgba[2];
-    cBuffer[o+3]=rgba[3];
-    if (z===false){
-      zBuffer[x]=-10000;
-    }else{
-      zBuffer[x]=z.dist;
+  setPixel: function (x, y, rgba, z) {
+    var o = x * 4;
+    var cBuffer = this.cBuffer;
+    var zBuffer = this.zBuffer;
+    cBuffer[o] = rgba[0];
+    cBuffer[o + 1] = rgba[1];
+    cBuffer[o + 2] = rgba[2];
+    cBuffer[o + 3] = rgba[3];
+    if (z === false) {
+      zBuffer[x] = -10000;
+    } else {
+      zBuffer[x] = z.dist;
     }
-
-    if (x===this.width-1){
+    if (x === this.width - 1) {
       postMessage({
-        id:this.id,
-        status:'setRow',
-        x:0,
-        y:y,
-        cData:cBuffer,
-        zData:zBuffer
+        id: this.id,
+        status: 'setRow',
+        x: 0,
+        y: y,
+        cData: cBuffer,
+        zData: zBuffer
       });
     }
-
     return this;
   },
-  render:function(){
-    postMessage({id:this.id,status: 'start'});
-    this.cBuffer = Uint8ClampedArray ? new Uint8ClampedArray(this.width*4) : new Array(this.width*4);
-    this.zBuffer = Float32Array ? new Float32Array(this.width) : new Array(this.width);
+  render: function () {
+    postMessage({
+      id: this.id,
+      status: 'start'
+    });
     var start = performance.now();
-    var width=this.width;
-    var height=this.height;
-    var x,y,aao;
-    var startY=this.startY;
-    var endY=this.endY;
-    var aaStep;
+    this.cBuffer = Uint8ClampedArray ? new Uint8ClampedArray(this.width * 4) : new Array(this.width * 4);
+    this.zBuffer = Float32Array ? new Float32Array(this.width) : new Array(this.width);
 
-    var c_color=vec4.create();
-    var aa_color=vec4.create();
-    var camera=this.camera;
-    var scene=this.scene;
-    var antiAlias=this.antiAlias;
-    var aaOffs=[[-0.65,-0.75],[0.85,-0.45],[0.35,0.25],[-0.35,0.5],[0,0]];
-    var aaOffsLen=aaOffs.length;
-    var aaDiv=1/aaOffsLen;
+    var width = this.width;
+    var height = this.height;
+    var startY = this.startY;
+    var endY = this.endY;
 
-    camera.setup(width,height);
+    var c_color = vec4.create();
+    var aa_color = vec4.create();
+    var camera = this.camera;
+    var scene = this.scene;
+    var antiAlias = this.antiAlias;
+    var aaOffs = [[-0.65, -0.75], [0.85, -0.45], [0.35, 0.25], [-0.35, 0.5], [0, 0]];
+    var aaOffsLen = aaOffs.length;
+    var aaDiv = 1 / aaOffsLen;
+
+    var x, y, aao;
+
+    camera.setup(width, height);
     scene.resetStats();
 
-    var ray=new Partrace.Ray('screen');
-    for (y=startY;y<endY;y++){
-      for (x=0;x<width;x++){
-        if (antiAlias){
-          aa_color[0]=0;
-          aa_color[1]=0;
-          aa_color[2]=0;
-          aa_color[3]=0;
-          aaSamps=0;
-          for (aao=0; aao<aaOffsLen; aao++){
+    var ray = new Partrace.Ray('screen');
+    for (y = startY; y < endY; y++) {
+      for (x = 0; x < width; x++) {
+        if (antiAlias) {
+          aa_color[0] = 0;
+          aa_color[1] = 0;
+          aa_color[2] = 0;
+          aa_color[3] = 0;
+          for (aao = 0; aao < aaOffsLen; aao++) {
             ray.reset();
-            camera.makeCameraRay(ray,x,y,aaOffs[aao]);
-            scene.raytrace(c_color,ray,0,1);
-            vec4.add(aa_color,aa_color,c_color);
+            camera.makeCameraRay(ray, x, y, aaOffs[aao]);
+            scene.raytrace(c_color, ray, 0, 1);
+            vec4.add(aa_color, aa_color, c_color);
           }
-          vec4.scale(aa_color,aa_color,aaDiv);
+          vec4.scale(aa_color, aa_color, aaDiv);
           Partrace.fixColor(aa_color);
-          this.setPixel(x,y,aa_color,ray.ip);
-        }else{
+          this.setPixel(x, y, aa_color, ray.ip);
+        } else { // antiAlias
           ray.reset();
-          camera.makeCameraRay(ray,x,y,vec4.NullVector);
-          scene.raytrace(c_color,ray,0,1);
+          camera.makeCameraRay(ray, x, y, vec4.NullVector);
+          scene.raytrace(c_color, ray, 0, 1);
           Partrace.fixColor(c_color);
-          this.setPixel(x,y,c_color,ray.ip);
-        }
-      }
+          this.setPixel(x, y, c_color, ray.ip);
+        } // no antiAlias
+      } // for x
       this.doProgress(y);
-    }
+    } // for y
     var end = performance.now();
     this.scene.computeStats(this.id);
-    this.scene.stats.renderTime=(end-start).toFixed(2);
-    postMessage({id:this.id,status:'stats',stats:this.scene.stats});
-    postMessage({id:this.id,status:'end'});
-  },
-  doProgress:function(y){
-    y-=this.startY;
-    var p=Math.ceil(y/(this.endY-this.startY)*100);
+    this.scene.stats.renderTime = (end - start).toFixed(2);
     postMessage({
-      id:this.id,
+      id: this.id,
+      status: 'stats',
+      stats: this.scene.stats
+    });
+    postMessage({
+      id: this.id,
+      status: 'end'
+    });
+  },
+  doProgress: function (y) {
+    y -= this.startY;
+    var p = Math.ceil(y / (this.endY - this.startY) * 100);
+    postMessage({
+      id: this.id,
       status: 'progress',
       progress: p
     });
   },
-  setPropsFromJson:function(json){ //*********************************
+  setPropsFromJson: function (json) {
     Partrace.log(json);
-    this.id     = json.id||0;
-    this.width  = json.width||640;
-    this.height = json.height||480;
-    this.startY = json.startY||0;
-    this.endY   = json.endY||this.height;
+    this.id = json.id || 0;
+    this.width = json.width || 640;
+    this.height = json.height || 480;
+    this.startY = json.startY || 0;
+    this.endY = json.endY || this.height;
     this.antiAlias = json.antiAlias || 0;
-
     if (json.camera) {
       this.camera.setPropsFromJson(json.camera);
     }
     if (json.scene) this.scene.setPropsFromJson(json.scene);
   }
 });
-Partrace.log=function(msg){
+Partrace.log = function (msg) {
   postMessage({
-    id:this.id,
-    status:'log',
-    msg:msg
+    id: this.id,
+    status: 'log',
+    msg: msg
   });
 };
-Partrace.fixColor=function(color){
-  color[0]=Math.saturate(color[0])*255;
-  color[1]=Math.saturate(color[1])*255;
-  color[2]=Math.saturate(color[2])*255;
-  color[3]=Math.saturate(color[3])*255;
+Partrace.fixColor = function (color) {
+  color[0] = Math.saturate(color[0]) * 255;
+  color[1] = Math.saturate(color[1]) * 255;
+  color[2] = Math.saturate(color[2]) * 255;
+  color[3] = Math.saturate(color[3]) * 255;
 };
-Partrace.vToBool=function(v){
-  if (v=='true' || v===true || parseInt(v)===1) return true;
+Partrace.vToBool = function (v) {
+  if (v == 'true' || v === true || parseInt(v) === 1) return true;
 };
-Partrace.vToVec4=function(v,point){
+Partrace.vToVec4 = function (v, point) {
   if (typeof v === 'string') {
-    v=v.explode(',');
+    v = v.explode(',');
     var i = v.length;
-    while (i--){
-      v[i]=parseFloat(v[i]);
+    while (i--) {
+      v[i] = parseFloat(v[i]);
     }
   }
   //console.log(Object.prototype.toString.call( v ));
-  if( Object.prototype.toString.call( v ) === '[object Array]' ){
-    if (v.length===1){
-      return vec4.fromValues(v[0],v[0],v[0],point ? 1 : 0);
-    }else if (v.length===4){
-      return vec4.fromValues(v[0],v[1],v[2],v[3]);
-    }else{
-      return vec4.fromValues(v[0],v[1],v[2],point ? 1 : 0);
+  if (Object.prototype.toString.call(v) === '[object Array]') {
+    if (v.length === 1) {
+      return vec4.fromValues(v[0], v[0], v[0], point ? 1 : 0);
+    } else if (v.length === 4) {
+      return vec4.fromValues(v[0], v[1], v[2], v[3]);
+    } else {
+      return vec4.fromValues(v[0], v[1], v[2], point ? 1 : 0);
     }
-  }else{
-    v=parseFloat(v);
-    return vec4.fromValues(v,v,v,point ? 1 : 0);
+  } else {
+    v = parseFloat(v);
+    return vec4.fromValues(v, v, v, point ? 1 : 0);
   }
 }
 
-Partrace.bounds=10000;
-Partrace.epsilon=0.0001;
-Partrace.Objects={};
-Partrace.Lights={};
-Partrace.Materials={};
+Partrace.bounds = 10000;
+Partrace.epsilon = 0.0001;
+Partrace.Objects = {};
+Partrace.Lights = {};
+Partrace.Materials = {};
