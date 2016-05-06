@@ -158,9 +158,8 @@ Partrace.Lights.Point=Partrace.Light.extend({
     if (json.diffuse)  this.setDiffuse(Partrace.vToVec4(json.diffuse,1));
     if (json.specular) this.setSpecular(Partrace.vToVec4(json.specular,1));
     if (json.ambient)  this.setAmbient(Partrace.vToVec4(json.ambient));
-    if (json.fallOffRadius) this.setfallOffRadius(parseFloat(json.fallOffRadius));
+    if (json.fallOffRadius!==undefined) this.setfallOffRadius(parseFloat(json.fallOffRadius));
     if (json.attenuationType) this.setAttenuationType(json.attenuationType);
     if (json.shader) this.setShader(json.shader);
-    console.log('light',this);
   }
 });
