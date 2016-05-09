@@ -118,7 +118,7 @@ Partrace = Class.extend({
 
     setup.width = width;
     setup.height = height;
-    this.maxWorkers = setup.maxWorkers ? setup.maxWorkers : navigator.hardwareConcurrency || 1;
+    this.maxWorkers = setup.maxWorkers ? setup.maxWorkers : navigator.hardwareConcurrency || 2;
 
     var workerSetup = $.extend({}, setup);
 
@@ -174,6 +174,7 @@ Partrace = Class.extend({
       this.doProgress();
       break;
     case 'end':
+      this.workers[data.id].terminate();
       this.workers[data.id].done = true;
       this.workersDone++;
       this.copyColorToScreen();
@@ -186,6 +187,9 @@ Partrace = Class.extend({
         Partrace.log(this.stats);
         Partrace.log('Total render time ' + this.start_render.toFixed(2) + ' ms');
       }
+      break;
+    case 'start':
+      Partrace.log('Worker started '+data.id);
       break;
     default:
       console.log('Unknown event', evt);
@@ -235,103 +239,6 @@ Partrace = Class.extend({
       if (!this.stats.rays[key]) this.stats.rays[key] = 0;
       this.stats.rays[key] += parseInt(w.stats.rays[key]);
     }
-  },
-  testScene: function () {
-    var setup = {
-      camera: {
-        position: [0, 0, -2.5],
-        fov: 90
-      },
-      scene: {
-        bg_color: [0, 0, 0],
-        fog: {
-          disabled: true,
-          type: 'linear',
-          near: 1,
-          far: 9
-        },
-        lights: [
-          {
-            type: 'point',
-            position: [5, 5, -5],
-            falloffRadius: 25,
-          }
-        ],
-        materials: [
-          {
-            name: 'checker',
-            type: 'checker',
-            scale: [0.1, 0.1, 0.05],
-            //reflect:0.25
-            shiny: 128,
-            metallic: true
-          },
-          {
-            name: 'blue',
-            type: 'basic',
-            diffuse: [0, 0, 0.9],
-            shiny: 16,
-            reflect: 0.25
-          },
-          {
-            name: 'glass',
-            type: 'basic',
-            diffuse: [1, 1, 1, 0.25],
-            refract: 1.51714, //glass
-            shiny: 128
-          },
-          {
-            name: 'checkermat',
-            type: 'checkermat',
-            diffuse: [0, 1, 0],
-            diffuse1: 'rainbow',
-            diffuse2: 'green',
-            scale: [0.1, 0.1, 0.05]
-          },
-          {
-            name: 'green',
-            type: 'basic',
-            diffuse: [0, 1, 0]
-          },
-          {
-            name: 'rainbow',
-            type: 'rainbow'
-          }
-        ],
-        objects: [
-          {
-            name: 'left Sphere',
-            type: 'sphere',
-            material: 'checker',
-            radius: 1,
-            position: [-1.25, 0, 0]
-          },
-          {
-            name: 'right Sphere',
-            type: 'sphere',
-            material: 'blue',
-            radius: 1,
-            position: [1.25, 0, 0]
-          },
-          {
-            disabled: false,
-            name: 'glass Sphere',
-            type: 'sphere',
-            material: 'glass',
-            radius: 0.5,
-            position: [0.75, -0.5, -1.25]
-          },
-          {
-            name: 'floor Plane',
-            type: 'plane',
-            material: 'checkermat',
-            position: [0, -1, 0],
-          }
-        ]
-      }
-    };
-    this.render(setup);
-    return setup;
   }
 });
 Partrace.log = function (msg) {
