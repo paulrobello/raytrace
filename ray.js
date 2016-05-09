@@ -6,7 +6,8 @@ Partrace.Ray=BaseObj.extend({
     this.intensity=1; // used to track if ray has been fully absorbed by translucent objects
     this.inside=false; // inside object?
     this.ir=1; // index of refraction
-    this.depth=0; // trace recursion depth    
+    this.depth=0; // trace recursion depth
+    this.aa=0;
     this.intersections=[]; // list of intersections this ray has passed through
   },
   reset:function(){
@@ -15,7 +16,8 @@ Partrace.Ray=BaseObj.extend({
     this.intensity=1; // used to track if ray has been fully absorbed by translucent objects
     this.inside=false; // inside object?
     this.ir=1; // index of refraction
-    this.depth=0; // trace recursion depth    
+    this.depth=0; // trace recursion depth
+    this.aa=0;
     this.intersections.length=0; // list of intersections this ray has passed through
   },
   copy:function(r){
@@ -26,17 +28,18 @@ Partrace.Ray=BaseObj.extend({
     this.inside=r.inside;
     this.ir=r.ir;
     this.depth=r.depth;
+    this.aa=r.aa;
     this.intersections.length=r.intersections.length;
-    var i = r.intersections.length;
-    while (i--){
+
+    for (var i=0,l = r.intersections.length;i<l;i++){
       this.intersections[i]=r.intersections[i];
-    }    
+    }
   },
   clone:function(){
     var r = new Partrace.Ray();
     r.copy(this);
     return r;
-  }  
+  }
 });
 Partrace.Intersection=BaseObj.extend({
   init:function(ray,object){
@@ -45,7 +48,7 @@ Partrace.Intersection=BaseObj.extend({
     this.dist=Partrace.bounds;
     this.dist2=this.dist*this.dist;
     this.p=vec4.create(); // start position
-    this.lp=vec4.create();    
+    this.lp=vec4.create();
     this.d=vec4.create(); // direction
     this.ld=vec4.create();
     this.ip=vec4.create(); // intersection point
@@ -60,7 +63,7 @@ Partrace.Intersection=BaseObj.extend({
   copy:function(r){
     this.type=r.type;
     vec4.copy(this.p,r.p);
-    vec4.copy(this.lp,r.lp);    
+    vec4.copy(this.lp,r.lp);
     vec4.copy(this.d,r.d);
     vec4.copy(this.ld,r.ld);
     vec4.copy(this.ip,r.ip);
@@ -86,4 +89,4 @@ Partrace.Intersection=BaseObj.extend({
     return r;
   }
 });
-  
+
