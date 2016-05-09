@@ -12,6 +12,7 @@
 
 <script src="https://rawgit.com/toji/gl-matrix/master/dist/gl-matrix-min.js"></script>
 
+<script src="/js/core-extimator/core-estimator.min.js"></script>
 <script src="/js/class.js"></script>
 <script src="/js/par.js"></script>
 <script src="/parmath.js"></script>
@@ -66,11 +67,17 @@ function saveContent(dataurl, fileName){
   link.click();
 }
 $(document).ready(function(){
+  if (!navigator.hardwareConcurrency || navigator.hardwareConcurrency<2) {
+    navigator.getHardwareConcurrency(function(cores){
+      navigator.hardwareConcurrency=cores;
+      console.log("Cores",navigator.hardwareConcurrency);
+    });
+  }else{
+    console.log("Cores",navigator.hardwareConcurrency);
+  }
   partrace=new Partrace("canvas");
   $("#progress").progressbar();
   $("#save").button().click(function(){
-    //var image = $("#canvas")[0].toDataURL("image/png").replace("image/png", "image/octet-stream");  // here is the most important part because if you dont replace you will get a DOM 18 exception.
-    //window.location.href=image; // it will save locally
     saveContent($("#canvas")[0].toDataURL(),'img.png');
   });
   $("#render").button().click(function(){
@@ -104,30 +111,38 @@ $(document).ready(function(){
   <textarea id="script" rows="30" cols="80">
 # lines starting with # are comments
 {
+  # 0 = auto detect
   "maxWorkers":0,
+  # width and height of image
   "width":800,
   "height":600,
   # 0 = off, 1=adaptive, 2=full
   "antiAlias":0,
-  "camera":{
-    "position":[0,0,-2.5],
-    "fov":90
-  },
+  "doReflect":true,
+  "doRefract":true,
   "scene":{
     "bg_color":[0,0,0],
+    "camera":{
+      "position":[0,0,-2.5],
+      "fov":90
+    },
     "fog":{
       "disabled":true,
+      # "linear","exp","exp2"
       "type":"linear",
       "near":1,
       "far":9
     },
     "lights":[
       {
-         "type":"point",
-         "position":[5,5,-5],
-         "shader":"blinn",
-         "attenuationType":"squared",
-         "fallOffRadius":12
+        "disabled":false,
+        "type":"point",
+        "position":[5,5,-3],
+        # "phong","blinn","beckmann"
+        "shader":"blinn",
+        # "none","linear","squared"
+        "attenuationType":"squared",
+        "fallOffRadius":12
       }
     ],
     "materials":[
@@ -176,7 +191,8 @@ $(document).ready(function(){
       },
       {
         "name":"rainbow",
-        "type":"rainbow"
+        "type":"rainbow",
+        "offset":[2,-3,3]
       }
     ],
     "objects":[
@@ -195,7 +211,6 @@ $(document).ready(function(){
         "position":[1.25,0,0]
       },
       {
-        "disabled":false,
         "name":"glass Sphere",
         "type":"sphere",
         "material":"glass",
