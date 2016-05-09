@@ -147,11 +147,11 @@ Partrace.Scene = Class.extend({
             vec4.negate(nvec, nvec);
           }
           var cosI = -vec4.dot(nvec, ray.d);
-          var cosT2 = 1-(n*n)*(1-(cosI*cosI));
-          if (cosT2>0){
+          var cosT2 = 1 - (n * n) * (1 - (cosI * cosI));
+          if (cosT2 > 0) {
             var rRay = new Partrace.Ray('refract', ray.p, ray.d);
             var rColor = vec4.create();
-            vec4.combine(rRay.d, ray.d, nvec, n, n*cosI-Math.sqrt(cosT2));
+            vec4.combine(rRay.d, ray.d, nvec, n, n * cosI - Math.sqrt(cosT2));
             vec4.normalize(rRay.d, rRay.d);
             vec4.project(rRay.p, ip.ip, rRay.d, 0.01);
             rRay.intensity = ray.intensity * ma;
@@ -159,13 +159,14 @@ Partrace.Scene = Class.extend({
             rRay.inside = ray.inside;
             if (this.raytrace(rColor, rRay, depth + 1, mir)) { // beers law to compute dufuse color absorbsion
               var absorb = vec4.clone(mat.d);
-              vec4.scale(absorb, absorb, 0.15 * -Math.abs(ray.ip.dist-rRay.ip.dist));
-              absorb[0] = Math.clamp(Math.exp(absorb[0]), 0, 1);
-              absorb[1] = Math.clamp(Math.exp(absorb[1]), 0, 1);
-              absorb[2] = Math.clamp(Math.exp(absorb[2]), 0, 1);
+              vec4.scale(absorb, absorb, 0.25 * -Math.abs(ray.ip.dist - rRay.ip.dist));
+              absorb[0] = Math.saturate(Math.exp(absorb[0]));
+              absorb[1] = Math.saturate(Math.exp(absorb[1]));
+              absorb[2] = Math.saturate(Math.exp(absorb[2]));
               absorb[3] = 1;
               vec4.multiply(rColor, rColor, absorb);
               vec4.multiply(rColor, rColor, mat.d);
+              vec4.scale(rColor, rColor, ma);
               vec4.add(color, color, rColor);
             }
           } //cosT2>0
