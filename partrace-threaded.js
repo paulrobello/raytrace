@@ -73,6 +73,7 @@ Partrace = Class.extend({
           vec4.copy(aa_color,c_color);
           for (aao = 0; aao < aaOffsLen; aao++) {
             ray.reset();
+            ray.aa=1;
             camera.makeCameraRay(ray, x, y, aaOffs[aao]);
             scene.raytrace(c_color, ray, 0, 1);
             vec4.add(aa_color, aa_color, c_color);
@@ -85,8 +86,9 @@ Partrace = Class.extend({
           this.setPixel(x, y, c_color, ray.ip);
         }
       } // for x
-      this.doProgress(y);
+      if (y%2===0) this.doProgress(y);
     } // for y
+    this.doProgress(endY);
     var end = performance.now();
     this.scene.computeStats(this.id);
     this.scene.stats.renderTime = (end - start).toFixed(2);
@@ -117,10 +119,10 @@ Partrace = Class.extend({
     this.startY = json.startY || 0;
     this.endY = json.endY || this.height;
     this.antiAlias = json.antiAlias || 0;
-    if (json.camera) {
-      this.camera.setPropsFromJson(json.camera);
-    }
     if (json.scene) this.scene.setPropsFromJson(json.scene);
+    if (json.doReflect!==undefined) this.scene.doReflect=json.doReflect;
+    if (json.doRefract!==undefined) this.scene.doRefract=json.doRefract;
+
   }
 });
 Partrace.log = function (msg) {
