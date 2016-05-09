@@ -192,11 +192,13 @@ Partrace.Scene = Class.extend({
     return null;
   },
   setPropsFromJson: function (json) {
+    if (json.camera) {
+      this.camera.setPropsFromJson(json.camera);
+    }
+
     if (json.bg_color) {
       vec4.copy(this.bg_color, Partrace.vToVec4(json.bg_color, 1));
     }
-    if (json.doReflect!==undefined) this.doReflect=json.doReflect;
-    if (json.doRefract!==undefined) this.doRefract=json.doRefract;
     if (json.fog && json.fog.disabled === false) {
       this.fog = new Partrace.Fog(this, this.bg_color);
       this.fog.setPropsFromJson(json.fog);
