@@ -15,6 +15,7 @@ Partrace.Light=BaseObj.extend({
     this.sColor=vec4.create();
   },
   intensity:function(color,ip){
+    return false;
   }
 });
 
@@ -32,12 +33,16 @@ Partrace.Lights.Point=Partrace.Light.extend({
       return this;
     }
 
-    var sh=0; // default shine
-    var a=1; // default alpha
-    var mat=ip.object.material;
+    var
+    sh, // default shine
+    a, // default alpha
+    mat=ip.object.material;
     if (mat){ // use material values if available
       sh=mat.shiny;
       a=mat.d[3];
+    }else{
+      a=1;
+      sh=0;
     }
     var l = this.l;
     vec4.subtract(l,this.position,ip.ip);
@@ -61,9 +66,7 @@ Partrace.Lights.Point=Partrace.Light.extend({
       vec4.copy(dl,this.kd);
     }
     vec4.copy(sl,this.ks); // start with light specular
-
     vec4.scale(dl,dl,intensity); //diffuse color shaded by angle between light and normal
-
 
     var oi=1; //attenuation modifyer for soft shadows and caustics
 
@@ -77,7 +80,7 @@ Partrace.Lights.Point=Partrace.Light.extend({
         var smat=sRay.ip.object.material;
         if (smat){
           var sta=smat.getAttrs(sRay);
-          if (false && sta.d[3]<1){
+          if (sta.d[3]<1){
             oi=sta.d[3];
             vec4.scale(this.sColor,sta.d,oi-smat.reflect);
             vec4.multiply(dl,dl,this.sColor);
@@ -134,6 +137,7 @@ Partrace.Lights.Point=Partrace.Light.extend({
     vec4.scale(color,color,att*oi) // attenuate and shadow
     vec4.add(color,color,al); // add ambient
     vec4.scale(color,color,a); // apply transparency
+    return false;
   },
   setDiffuse:function(v){
     vec4.copy(this.kd,v);
