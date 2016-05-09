@@ -132,10 +132,11 @@ Partrace.Scene = Class.extend({
           rRay.depth = depth;
           this.raytrace(rColor, rRay, depth + 1, ir);
           rColor[3] = 0;
-          if (mat.matallic) {
-            mat4.multiply(rColor, rColor, mat.d);
+          if (mat.metallic) {
+            vec4.multiply(rColor, rColor, mat.d);
           }
           vec4.scale(rColor, rColor, mr);
+          
           vec4.add(color, color, rColor);
         } // end do reflect
         if (this.doRefract && ma < 1) {
@@ -159,14 +160,19 @@ Partrace.Scene = Class.extend({
             rRay.inside = ray.inside;
             if (this.raytrace(rColor, rRay, depth + 1, mir)) { // beers law to compute dufuse color absorbsion
               var absorb = vec4.clone(mat.d);
-              vec4.scale(absorb, absorb, 0.25 * -Math.abs(ray.ip.dist - rRay.ip.dist));
+              vec4.scale(absorb, absorb, 0.5 * -Math.abs(ray.ip.dist - rRay.ip.dist));
               absorb[0] = Math.saturate(Math.exp(absorb[0]));
               absorb[1] = Math.saturate(Math.exp(absorb[1]));
               absorb[2] = Math.saturate(Math.exp(absorb[2]));
               absorb[3] = 1;
-              vec4.multiply(rColor, rColor, absorb);
-              vec4.multiply(rColor, rColor, mat.d);
-              vec4.scale(rColor, rColor, ma);
+              if (ray.inside){
+                vec4.multiply(rColor, rColor, absorb);
+                vec4.multiply(rColor, rColor, mat.d);
+                vec4.scale(rColor, rColor, ma);
+              }else{
+                vec4.multiply(rColor, rColor, absorb);
+                vec4.multiply(rColor, rColor, mat.d);
+              }
               vec4.add(color, color, rColor);
             }
           } //cosT2>0
