@@ -54,11 +54,11 @@ Partrace.Lights.Point=Partrace.Light.extend({
     var ldotn=vec4.dot(l,ip.n);
     var intensity=Math.saturate(ldotn);
 
-    var al=this.al;
-    var dl=this.dl;
-    var sl=this.sl;
+    var al=this.al; // ambient light
+    var dl=this.dl; // diffuse light
+    var sl=this.sl; // specular light
 
-    if (mat){
+    if (mat){ // do we have a material ?
       vec4.add(al,this.ka,mat.a); // add light ambient with material
       vec4.multiply(dl,this.kd,mat.d); // combine light diffuse with material
     }else{
@@ -77,14 +77,14 @@ Partrace.Lights.Point=Partrace.Light.extend({
 
       if (this.scene.itersectScene(sRay)){
         oi=this.ka[0];
-        var smat=sRay.ip.object.material;
+        var smat=sRay.ip.object.material; // object casting shadow material
         if (smat){
           var sta=smat.getAttrs(sRay);
           if (sta.d[3]<1){
             oi=sta.d[3];
-            vec4.scale(this.sColor,sta.d,oi-smat.reflect);
+            vec4.scale(this.sColor,sta.d,oi);
             vec4.multiply(dl,dl,this.sColor);
-          } // end caustic
+          } // end translucent
         } // end smat
       } // end shadow hit
     } // end do shadow
