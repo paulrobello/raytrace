@@ -1,64 +1,66 @@
 <!DOCTYPE html>
 <html>
   <head>
-  <title>PARTrace JS</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-  <link type="text/css" href="https://code.jquery.com/ui/1.11.4/themes/ui-lightness/jquery-ui.min.css" rel="stylesheet" />
-  <link type="text/css" href="/css/main.css" rel="stylesheet" />
-  <script src="https://code.jquery.com/jquery-1.12.3.min.js"></script>
-  <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.11.2/lodash.min.js"></script>
+    <title>PARTrace JS</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" href="https://code.jquery.com/ui/1.11.4/themes/ui-lightness/jquery-ui.min.css" rel="stylesheet" />
+    <link type="text/css" href="/css/main.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-1.12.3.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.11.2/lodash.min.js"></script>
 
-  <script src="https://rawgit.com/toji/gl-matrix/master/dist/gl-matrix-min.js"></script>
+    <script src="https://rawgit.com/toji/gl-matrix/master/dist/gl-matrix-min.js"></script>
 
-  <script src="/js/core-extimator/core-estimator.min.js"></script>
-  <script src="/js/class.js"></script>
-  <script src="/js/par.js"></script>
-  <script src="/parmath.js"></script>
-  <script src="/utils.js"></script>
+    <script src="/js/core-extimator/core-estimator.min.js"></script>
+    <script src="/js/class.js"></script>
+    <script src="/js/par.js"></script>
+    <script src="/parmath.js"></script>
+    <script src="/utils.js"></script>
 
-  <script src="/partrace.js"></script>
+    <script src="/partrace.js"></script>
 
-  <style>
-  body {
-    font-family: Monospace;
-    border:0;
-    margin:0;
-    padding:0;
-    width:100%;
-  }
-  #output {
-    border:0;
-    margin:0;
-    padding:0;
-    width:100%;
-  }
-  canvas {
-    border: 0px solid black;
-    background-color: #000;
-    z-index:1;
-  }
-  #progress{
-    width:99%;
-    height:24px;
-  }
-  #render {
-  }
-  #log {
-    width:99%;
-    min-height:200px;
-    overflow:auto;
-    border:1px solid black;
-    margin-top:5px;
-    white-space:pre;
-  }
-  #script {
-    border:1px solid black;
-    width:100%;
-    height:100%;
-  }
-  </style>
+    <style>
+    body {
+      font-family: Monospace;
+      border:0;
+      margin:0;
+      padding:0;
+      width:100%;
+    }
+    #output {
+      border:0;
+      margin:0;
+      padding:0;
+      width:100%;
+    }
+    canvas {
+      padding: 0;
+      margin: 0;
+      border: 0px solid black;
+      background-color: #000;
+      z-index:1;
+    }
+    #progress{
+      width:99%;
+      height:24px;
+    }
+    #render {
+    }
+    #log {
+      width:99%;
+      min-height:200px;
+      overflow:auto;
+      border:1px solid black;
+      margin-top:5px;
+      white-space:pre;
+    }
+    #script {
+      border:1px solid black;
+      width:100%;
+      height:100%;
+    }
+    </style>
   </head>
   <body>
     <div id="tools">
@@ -72,12 +74,12 @@
     <table id="output">
       <tr>
         <td width="50%" style="vertical-align:top">
-          <canvas id="canvas" width="640" height="480"></canvas>
+          <canvas id="canvas" width="800" height="600"></canvas>
         </td>
         <td width="50%" style="vertical-align:top">
-          <div><label for="script"><h4>Scene</h4></label></div>
+          <label for="script"><h4>Scene</h4></label><br>
           <form id="form">
-            <textarea id="script" rows="30" cols="80">
+            <textarea id="script" rows="33" cols="80">
 # lines starting with # are comments
 {
   # 0 = auto detect
@@ -196,7 +198,7 @@
     ]
   }
 }
-        </textarea>
+          </textarea>
         </form>
         <div id="progress"></div>
       </td>
@@ -257,6 +259,5 @@
     }
   });
   </script>
-
 </body>
 </html>
