@@ -122,6 +122,7 @@ Partrace = Class.extend({
     if (json.scene) this.scene.setPropsFromJson(json.scene);
     if (json.doReflect!==undefined) this.scene.doReflect=json.doReflect;
     if (json.doRefract!==undefined) this.scene.doRefract=json.doRefract;
+    if (json.doShadows!==undefined) this.scene.doShadows=json.doShadows;    
 
   }
 });
