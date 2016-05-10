@@ -107,17 +107,6 @@ Partrace.Lights.Point=Partrace.Light.extend({
           var ndoth=vec4.dot(ip.n,h); // angle between camera and reflected light
           intensity=Math.pow(Math.saturate(ndoth),sh);
           break;
-        case 'beckmann':
-          vec4.negate(h,ip.ray.d);
-          vec4.add(h,h,l); // compute half vector;
-          vec4.normalize(h,h);
-          var ndoth=vec4.dot(ip.n,h); // angle between camera and reflected light
-          if (ndoth<0) ndoth=0;
-          var ndoth2=ndoth*ndoth;
-          var m=(mat ? mat.roughness : 0.5) || 0.5;
-          var m2=m*m;
-          intensity=Math.exp((ndoth2-1)/(m2*ndoth2)/(Math.PI*m2*ndoth2*ndoth2));
-          break;
         default: intensity=0;
       }
 
