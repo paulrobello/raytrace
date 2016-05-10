@@ -1,114 +1,83 @@
 <!DOCTYPE html>
 <html>
-<head>
-<title>PARTrace JS</title>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-<link type="text/css" href="https://code.jquery.com/ui/1.11.4/themes/ui-lightness/jquery-ui.min.css" rel="stylesheet" />
-<link type="text/css" href="/css/main.css" rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-1.12.3.min.js"></script>
-<script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.11.2/lodash.min.js"></script>
+  <head>
+  <title>PARTrace JS</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <link type="text/css" href="https://code.jquery.com/ui/1.11.4/themes/ui-lightness/jquery-ui.min.css" rel="stylesheet" />
+  <link type="text/css" href="/css/main.css" rel="stylesheet" />
+  <script src="https://code.jquery.com/jquery-1.12.3.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.11.2/lodash.min.js"></script>
 
-<script src="https://rawgit.com/toji/gl-matrix/master/dist/gl-matrix-min.js"></script>
+  <script src="https://rawgit.com/toji/gl-matrix/master/dist/gl-matrix-min.js"></script>
 
-<script src="/js/core-extimator/core-estimator.min.js"></script>
-<script src="/js/class.js"></script>
-<script src="/js/par.js"></script>
-<script src="/parmath.js"></script>
-<script src="/utils.js"></script>
+  <script src="/js/core-extimator/core-estimator.min.js"></script>
+  <script src="/js/class.js"></script>
+  <script src="/js/par.js"></script>
+  <script src="/parmath.js"></script>
+  <script src="/utils.js"></script>
 
-<script src="/partrace.js"></script>
+  <script src="/partrace.js"></script>
 
-<style>
-body {
-  font-family: Monospace;
-  border:0;
-  margin:0;
-  padding:0;
-  width:100%;
-}
-#output {
-  border:0;
-  margin:0;
-  padding:0;
-  width:auto;
-  float:left;
-}
-canvas {
-  border: 0px solid black;
-  background-color: #000;
-  z-index:1;
-}
-#progress{
-  width:99%;
-  height:24px;
-}
-#render {
-}
-#log {
-  width:99%;
-  min-height:200px;
-  overflow:auto;
-  border:1px solid black;
-  margin-top:5px;
-  white-space:pre;
-}
-#script {
-  border:1px solid black;
-}
-</style>
-<script>
-var partrace=null;
-function saveContent(dataurl, fileName){
-  var link = document.createElement('a');
-  link.download = fileName;
-  link.href = dataurl;
-  link.click();
-}
-$(document).ready(function(){
-  if (!navigator.hardwareConcurrency || navigator.hardwareConcurrency<2) {
-    navigator.getHardwareConcurrency(function(cores){
-      navigator.hardwareConcurrency=cores;
-      console.log("Cores",navigator.hardwareConcurrency);
-    });
-  }else{
-    console.log("Cores",navigator.hardwareConcurrency);
+  <style>
+  body {
+    font-family: Monospace;
+    border:0;
+    margin:0;
+    padding:0;
+    width:100%;
   }
-  partrace=new Partrace("canvas");
-  $("#progress").progressbar();
-  $("#save").button().click(function(){
-    saveContent($("#canvas")[0].toDataURL(),'img.png');
-  });
-  $("#render").button().click(function(){
-    $("#log").empty();
-    try{
-      partrace.render(JSON.parse($("#script").val().replace(/(\#.*)/g,'')));
-    }catch(e){
-      alert(e);
-    }
-  });
-  $(".buffer").click(function(){
-    if ($(this).val()==='color'){
-      partrace.copyColorToScreen();
-    }else{
-      partrace.copyZToScreen();
-    }
-  });
-//  setTimeout(function(){$("#render").click();},1000);
-  //partrace.testScene();
-});
-
-</script>
-</head>
-<body>
-<div id="output">
-  <canvas id="canvas" width="640" height="480"></canvas>
-  <div id="progress"></div>
-</div>
-<div style="float:left;">
-  <div><label for="script"><h4>Scene</h4></label></div>
-  <textarea id="script" rows="30" cols="80">
+  #output {
+    border:0;
+    margin:0;
+    padding:0;
+    width:100%;
+  }
+  canvas {
+    border: 0px solid black;
+    background-color: #000;
+    z-index:1;
+  }
+  #progress{
+    width:99%;
+    height:24px;
+  }
+  #render {
+  }
+  #log {
+    width:99%;
+    min-height:200px;
+    overflow:auto;
+    border:1px solid black;
+    margin-top:5px;
+    white-space:pre;
+  }
+  #script {
+    border:1px solid black;
+    width:100%;
+    height:100%;
+  }
+  </style>
+  </head>
+  <body>
+    <div id="tools">
+      <div id="reset" class="button">Reset Scene</div>
+      <div id="render" class="button">Render</div>
+      <div id="save" class="button">Save Image</div>
+      <label>Buffer:</label>
+      <label>Color</label><input type="radio" class="buffer" value="color" name="buffer" checked>
+      <label>Z</label><input type="radio" class="buffer" value="zbuffer" name="buffer">
+    </div>
+    <table id="output">
+      <tr>
+        <td width="50%" style="vertical-align:top">
+          <canvas id="canvas" width="640" height="480"></canvas>
+        </td>
+        <td width="50%" style="vertical-align:top">
+          <div><label for="script"><h4>Scene</h4></label></div>
+          <form id="form">
+            <textarea id="script" rows="30" cols="80">
 # lines starting with # are comments
 {
   # 0 = auto detect
@@ -227,12 +196,67 @@ $(document).ready(function(){
     ]
   }
 }
-</textarea>
-</div>
-<div id="render" class="button">Render</div>
-<div id="save" class="button">Save</div>
-<label>Color</label><input type="radio" class="buffer" value="color" name="buffer" checked>
-<label>ZBuffer</label><input type="radio" class="buffer" value="zbuffer" name="buffer">
-<div id="log"></div>
+        </textarea>
+        </form>
+        <div id="progress"></div>
+      </td>
+    </tr>
+  </table>
+  <div id="log"></div>
+
+  <script>
+  var partrace=null;
+  function saveContent(dataurl, fileName){
+    var link = document.createElement('a');
+    link.download = fileName;
+    link.href = dataurl;
+    link.click();
+  }
+  $(document).ready(function(){
+    $("#render").button().button("disable");
+    if (!navigator.hardwareConcurrency || navigator.hardwareConcurrency<2) {
+      navigator.getHardwareConcurrency(function(cores){
+        navigator.hardwareConcurrency=cores;
+        console.log("Cores Detected",navigator.hardwareConcurrency);
+        $("#render").button("enable");
+      });
+    }else{
+      console.log("Native Cores",navigator.hardwareConcurrency);
+      $("#render").button("enable");
+    }
+    partrace=new Partrace("canvas");
+    $("#progress").progressbar();
+    $("#reset").button().click(function(){
+      $('#form')[0].reset();
+    });
+    $("#save").button().click(function(){
+      saveContent($("#canvas")[0].toDataURL(),'img.png');
+    });
+    $("#render").click(function(){
+      if(typeof(localStorage) !== "undefined") {
+        localStorage.setItem('scene',$('#script').val());
+      }
+      $("#log").empty();
+      try{
+        partrace.render(JSON.parse($("#script").val().replace(/(\#.*)/g,'')));
+      }catch(e){
+        alert(e);
+      }
+    });
+    $(".buffer").click(function(){
+      if ($(this).val()==='color'){
+        partrace.copyColorToScreen();
+      }else{
+        partrace.copyZToScreen();
+      }
+    });
+  //  setTimeout(function(){$("#render").click();},1000);
+    if(typeof(localStorage) !== "undefined") {
+      var scn=localStorage.getItem('scene');
+      if (scn) $('#script').val(scn);
+    }
+  });
+  </script>
+
 </body>
 </html>
