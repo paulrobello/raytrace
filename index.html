@@ -91,6 +91,7 @@
   "antiAlias":0,
   "doReflect":true,
   "doRefract":true,
+  "doShadows":true,
   "scene":{
     "bg_color":[0,0,0],
     "camera":{
@@ -109,7 +110,7 @@
         "disabled":false,
         "type":"point",
         "position":[5,5,-3],
-        # "phong","blinn","beckmann"
+        # "phong","blinn"
         "shader":"phong",
         # "none","linear","squared"
         "attenuationType":"squared",
@@ -122,15 +123,14 @@
         "type":"checker",
         "scale":[0.1,0.1,0.05],
         "specular":[1,1,1],
-        "shiny":128,
-        "metallic":true
+        "shiny":128
       },
       {
         "name":"blue",
         "type":"basic",
-        "diffuse":[0,0,0.9],
+        "diffuse":[0,0,1],
         "shiny":16,
-        "reflect":0.75,
+        "reflect":0.95,
         "metallic":true
       },
       {
