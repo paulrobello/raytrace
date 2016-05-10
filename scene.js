@@ -136,7 +136,7 @@ Partrace.Scene = Class.extend({
             vec4.multiply(rColor, rColor, mat.d);
           }
           vec4.scale(rColor, rColor, mr);
-          
+
           vec4.add(color, color, rColor);
         } // end do reflect
         if (this.doRefract && ma < 1) {
@@ -206,7 +206,7 @@ Partrace.Scene = Class.extend({
     if (json.bg_color) {
       vec4.copy(this.bg_color, Partrace.vToVec4(json.bg_color, 1));
     }
-    if (json.fog && json.fog.disabled === false) {
+    if (json.fog && (json.fog.disabled === false || json.fog.disabled === undefined)) {
       this.fog = new Partrace.Fog(this, this.bg_color);
       this.fog.setPropsFromJson(json.fog);
     } else {
