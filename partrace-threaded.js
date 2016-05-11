@@ -51,12 +51,18 @@ Partrace = Class.extend({
     var camera = this.camera;
     var scene = this.scene;
     var antiAlias = this.antiAlias;
-    var aaOffs = [[-0.65, -0.75], [0.85, -0.45], [0.35, 0.25], [-0.35, 0.5]];
+    var aaThreshold = this.aaThreshold;
+    var aaOffs = [];
+    var i, x, y, aao;
+    var aaStep=(1/antiAlias)/2
+    for (x=-antiAlias;x<=antiAlias;x++){
+      for (y=-antiAlias;y<=antiAlias;y++){
+        if (x===0 && y===0) continue;
+        aaOffs.push([x*aaStep+((Math.random()-Math.random())*aaStep*0.5),y*aaStep+((Math.random()-Math.random())*aaStep*0.5)]);
+      }
+    }
     var aaOffsLen = aaOffs.length;
     var aaDiv = 1 / (aaOffsLen+1);
-    var aaThresh=0.0001;
-
-    var x, y, aao;
 
     camera.setup(width, height);
     scene.resetStats();
@@ -68,7 +74,7 @@ Partrace = Class.extend({
         ray.reset();
         camera.makeCameraRay(ray, x, y, vec4.NullVector);
         scene.raytrace(c_color, ray, 0, 1);
-        if (antiAlias==2 || (antiAlias && (Math.abs(c_color[0]-lastColor[0])>aaThresh||Math.abs(c_color[1]-lastColor[1])>aaThresh||Math.abs(c_color[2]-lastColor[2])>aaThresh))){
+        if ((antiAlias && !aaThreshold) || (antiAlias && aaThreshold && (Math.abs(c_color[0]-lastColor[0])>aaThreshold||Math.abs(c_color[1]-lastColor[1])>aaThreshold||Math.abs(c_color[2]-lastColor[2])>aaThreshold))){
           vec4.copy(lastColor,c_color);
           vec4.copy(aa_color,c_color);
           for (aao = 0; aao < aaOffsLen; aao++) {
@@ -119,10 +125,11 @@ Partrace = Class.extend({
     this.startY = json.startY || 0;
     this.endY = json.endY || this.height;
     this.antiAlias = json.antiAlias || 0;
+    this.aaThreshold = json.aaThreshold || 0;
     if (json.scene) this.scene.setPropsFromJson(json.scene);
     if (json.doReflect!==undefined) this.scene.doReflect=json.doReflect;
     if (json.doRefract!==undefined) this.scene.doRefract=json.doRefract;
-    if (json.doShadows!==undefined) this.scene.doShadows=json.doShadows;    
+    if (json.doShadows!==undefined) this.scene.doShadows=json.doShadows;
 
   }
 });
