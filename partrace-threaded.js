@@ -37,7 +37,7 @@ Partrace = Class.extend({
       id: this.id,
       status: 'start'
     });
-    var start = performance.now();
+    var start = (new Date()).getTime();
     this.cBuffer = Uint8ClampedArray ? new Uint8ClampedArray(this.width * 4) : new Array(this.width * 4);
     this.zBuffer = Float32Array ? new Float32Array(this.width) : new Array(this.width);
 
@@ -95,9 +95,9 @@ Partrace = Class.extend({
       if (y%2===0) this.doProgress(y);
     } // for y
     this.doProgress(endY);
-    var end = performance.now();
+    var end = (new Date()).getTime();
     this.scene.computeStats(this.id);
-    this.scene.stats.renderTime = (end - start).toFixed(2);
+    this.scene.stats.renderTime = (end - start).toFixed(0);
     postMessage({
       id: this.id,
       status: 'stats',

@@ -102,7 +102,7 @@ Partrace = Class.extend({
     return this;
   },
   render: function (setup) {
-    this.start_render = performance.now();
+    this.start_render = (new Date()).getTime();
     this.workers = [];
     this.workersDone = 0;
     this.element.width = setup.width || this.element.width;
@@ -181,11 +181,11 @@ Partrace = Class.extend({
       if (this.workersDone === this.workers.length) {
         this.normalizeZBuffer();
         this.zBufferToColor();
-        this.start_render = performance.now() - this.start_render;
+        this.start_render = (new Date()).getTime() - this.start_render;
         for (var i = 0; i < this.workers.length; i++) this.mergeStats(i);
         this.computeStats();
         Partrace.log(this.stats);
-        Partrace.log('Total render time ' + this.start_render.toFixed(2) + ' ms');
+        Partrace.log('Total render time ' + this.start_render.toFixed(0) + ' ms');
       }
       break;
     case 'start':
