@@ -82,13 +82,15 @@
             <textarea id="script" rows="33" cols="80">
 # lines starting with # are comments
 {
-  # 0 = auto detect
+  # 0 = auto detect or set to number of cpu cores
   "maxWorkers":0,
   # width and height of image
   "width":800,
   "height":600,
-  # 0 = off, 1=adaptive, 2=full
+  # 0 = off, 1=3x3, 2=5x5
   "antiAlias":0,
+  # 0=disable adaptive aa
+  "aaThreshold":0.001,
   "doReflect":true,
   "doRefract":true,
   "doShadows":true,
