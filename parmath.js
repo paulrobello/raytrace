@@ -226,7 +226,7 @@ mat4.anglePreservingMatrixInvert = function (mat) {
 };
 
 mat4.transpose_scale_m33 = function (out, mat, scale) {
-  if (mat === undefined) out = mat4.create();
+  if (out === undefined) out = mat4.create();
   out[0] = scale * mat[0];
   out[4] = scale * mat[1];
   out[8] = scale * mat[2];
