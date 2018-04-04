@@ -204,7 +204,7 @@ var BaseObj = Class.extend({
       if (!this.absoluteMatrix) this.absoluteMatrix=mat4.create();
       this.dirty=false;
       if (this.parent) {
-        mat4.multiply(this.localMatrix, this.parent.getAbsoluteMatrix(), this.getLocalMatrix());
+        mat4.multiply(this.absoluteMatrix, this.parent.getAbsoluteMatrix(), this.getLocalMatrix());
       } else {
         mat4.copy(this.absoluteMatrix,this.getLocalMatrix());
       }
