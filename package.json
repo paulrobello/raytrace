@@ -1,0 +1,15 @@
+{
+  "name": "partrace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PARTrace JS — a JavaScript ray tracer with a row-partitioned Web Worker render pool.",
+  "scripts": {
+    "test": "node tests/smoke-types.js && node tests/headless-render.js",
+    "lint": "eslint . --ext .js",
+    "fmt": "eslint . --ext .js --fix",
+    "checkall": "npm run lint && npm test"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}

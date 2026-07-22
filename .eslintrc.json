@@ -1,0 +1,43 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "worker": true,
+    "node": true,
+    "es2022": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "script"
+  },
+  "globals": {
+    "Partrace": "writable",
+    "BaseObj": "writable",
+    "Class": "readonly",
+    "glMatrix": "readonly",
+    "vec2": "readonly",
+    "vec3": "readonly",
+    "vec4": "readonly",
+    "mat2": "readonly",
+    "mat3": "readonly",
+    "mat4": "readonly",
+    "quat": "readonly",
+    "importScripts": "readonly",
+    "postMessage": "readonly",
+    "self": "readonly",
+    "$": "readonly",
+    "FormatJSON": "readonly",
+    "SortObject": "readonly",
+    "RealTypeOf": "readonly",
+    "logIt": "readonly",
+    "logJSON": "readonly"
+  },
+  "rules": {
+    "no-dupe-keys": "error",
+    "no-redeclare": "warn",
+    "no-undef": "warn",
+    "no-unused-vars": "warn",
+    "no-fallthrough": "warn",
+    "no-empty": ["warn", { "allowEmptyCatch": true }]
+  }
+}
