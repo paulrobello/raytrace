@@ -172,8 +172,8 @@ Partrace.Materials.Combiner = Partrace.Material.extend({
   },
   getAttrs: function (ray) {
     if (!this.d1 || !this.d2) return this;
-    vec4.copy(this.d, this.d1.getAttrs(ray));
-    vec4.add(this.d, this.d, this.d2.getAttrs(ray));
+    vec4.copy(this.d, this.d1.getAttrs(ray).d);
+    vec4.add(this.d, this.d, this.d2.getAttrs(ray).d);
     return this;
   },
   setDiffuse1: function (v) {

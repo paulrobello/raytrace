@@ -1,32 +1,10 @@
-//trimming space from both side of the string
-String.prototype.trim = function() {
-  return this.replace(/^\s+|\s+$/g,"");
-}
- 
-//trimming space from left side of the string
-String.prototype.ltrim = function() {
-  return this.replace(/^\s+/,"");
-}
- 
-//trimming space from right side of the string
-String.prototype.rtrim = function() {
-  return this.replace(/\s+$/,"");
-}
-
-//pads left
-String.prototype.lpad = function(padString, length) {
-  var str = this;
-    while (str.length < length)
-        str = padString + str;
-    return str;
-}
- 
-//pads right
-String.prototype.rpad = function(padString, length) {
-  var str = this;
-    while (str.length < length)
-        str = str + padString;
-    return str;
+function escapeHTML(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function logIt(msg){
@@ -53,12 +31,7 @@ function FormatJSON(oData, sIndent, depth, maxDepth) {
         }
         var sHTML = "[";
     } else {
-        var iCount = 0;
-        $.each(oData, function() {
-            iCount++;
-            return;
-        });
-        if (iCount == 0) { // object is empty
+        if (Object.keys(oData).length === 0) { // object is empty
             return "{}";
         }
         var sHTML = "{";
@@ -66,7 +39,15 @@ function FormatJSON(oData, sIndent, depth, maxDepth) {
 
     // loop through items
     var iCount = 0;
-    $.each(oData, function(sKey, vValue) {
+    var keys = (sDataType == "array") ? null : (function () {
+        var arr = [];
+        for (var k in oData) arr.push(k);
+        return arr;
+    })();
+    var keysLen = keys ? keys.length : oData.length;
+    for (var ki = 0; ki < keysLen; ki++) {
+        var sKey = keys ? keys[ki] : ki;
+        var vValue = oData[sKey];
       try{
         if (iCount > 0) {
             sHTML += ",";
@@ -74,7 +55,7 @@ function FormatJSON(oData, sIndent, depth, maxDepth) {
         if (sDataType == "array") {
             sHTML += ("\n" + sIndent + sIndentStyle);
         } else {
-            sHTML += ("\n" + sIndent + sIndentStyle + "\"" + sKey + "\"" + ": ");
+            sHTML += ("\n" + sIndent + sIndentStyle + "\"" + escapeHTML(sKey) + "\"" + ": ");
         }
 
         // display relevant data type
@@ -91,7 +72,7 @@ function FormatJSON(oData, sIndent, depth, maxDepth) {
                 sHTML += "null";
                 break;
             case "string":
-                sHTML += ("\"" + vValue + "\"");
+                sHTML += ("\"" + escapeHTML(vValue) + "\"");
                 break;
             default:
                 sHTML += ("TYPEOF: " + typeof(vValue));
@@ -100,7 +81,7 @@ function FormatJSON(oData, sIndent, depth, maxDepth) {
         // loop
         iCount++;
         }catch(e){}
-    });
+    }
 
     // close object
     if (sDataType == "array") {
@@ -118,18 +99,18 @@ function SortObject(oData) {
     var aSortArray = [];
 
     // sort keys
-    $.each(oData, function(sKey) {
-        aSortArray.push(sKey);
-    });
+    for (var sk in oData) {
+        aSortArray.push(sk);
+    }
     aSortArray.sort(SortLowerCase);
 
     // create new data object
-    $.each(aSortArray, function(i) {
+    for (var i = 0; i < aSortArray.length; i++) {
         if (RealTypeOf(oData[(aSortArray[i])]) == "object" ) {
             oData[(aSortArray[i])] = SortObject(oData[(aSortArray[i])]);
         }
         oNewData[(aSortArray[i])] = oData[(aSortArray[i])];
-    });
+    }
 
     return oNewData;
 

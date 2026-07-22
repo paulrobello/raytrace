@@ -84,7 +84,7 @@ Partrace.Intersection=BaseObj.extend({
     return this;
   },
   clone:function(){
-    var r = new Partrace.Ray();
+    var r = new Partrace.Intersection();
     r.copy(this);
     return r;
   }

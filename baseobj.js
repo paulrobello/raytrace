@@ -10,7 +10,7 @@ var BaseObj = Class.extend({
     this.calculating=false;
     this.scene=null;
     this.castShadows=true;
-    this.receveShadows=true;
+    this.receiveShadows=true;
 
     vec4.copy(this.up,       vec4.YVector);
     vec4.copy(this.direction,vec4.ZVector);
@@ -214,7 +214,7 @@ var BaseObj = Class.extend({
   getInvAbsoluteMatrix:function(){
     if (this.dirty || !this.invAbsoluteMatrix){
       if (!this.invAbsoluteMatrix) this.invAbsoluteMatrix=mat4.create();
-      if (mat4.equals(this.scale, vec4.XYZVector)) {
+      if (vec4.equals(this.scale, vec4.XYZVector)) {
         if (this.parent){
           mat4.multiply(this.invAbsoluteMatrix,this.parent.getInvAbsoluteMatrix(), mat4.anglePreservingMatrixInvert(this.getLocalMatrix()));
         } else {
@@ -295,15 +295,23 @@ var BaseObj = Class.extend({
   setName:function(v){
     this.name=v||"";
   },
+  setCastShadows:function(v){
+    this.castShadows=v;
+    return this;
+  },
+  setReceiveShadows:function(v){
+    this.receiveShadows=v;
+    return this;
+  },
   setPropsFromJson:function(json){
-    if (json.name)      this.setName(json.name);      
+    if (json.name)      this.setName(json.name);
     if (json.position)  this.setPosition(Partrace.vToVec4(json.position,1));
     if (json.direction) this.setDirection(Partrace.vToVec4(json.direction));
-    if (json.up)        this.setUp(Partrace.vToVec4(json.up));    
+    if (json.up)        this.setUp(Partrace.vToVec4(json.up));
     if (json.scale)     {
     this.setScale(Partrace.vToVec4(json.scale,1));
     }
-    if (json.castShadow)    this.setCastShadow(Partrace.vToBool(json.castShadows));
-    if (json.recieveShadow) this.setCastShadow(Partrace.vToBool(json.recieveShadows));
-  }  
+    if (json.castShadows)    this.setCastShadows(Partrace.vToBool(json.castShadows));
+    if (json.receiveShadows) this.setReceiveShadows(Partrace.vToBool(json.receiveShadows));
+  }
 });

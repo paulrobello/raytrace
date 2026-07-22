@@ -151,13 +151,12 @@ Partrace.vToBool = function (v) {
 };
 Partrace.vToVec4 = function (v, point) {
   if (typeof v === 'string') {
-    v = v.explode(',');
+    v = v.split(',');
     var i = v.length;
     while (i--) {
       v[i] = parseFloat(v[i]);
     }
   }
-  //console.log(Object.prototype.toString.call( v ));
   if (Object.prototype.toString.call(v) === '[object Array]') {
     if (v.length === 1) {
       return vec4.fromValues(v[0], v[0], v[0], point ? 1 : 0);

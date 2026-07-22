@@ -70,7 +70,6 @@ Partrace = Class.extend({
       if (buffer[i] < lv) lv = buffer[i];
     }
     var r = hv - lv;
-    //console.log('zBuffer range l,h,r', lv, hv, r);
     if (r === 0) r = 1;
     for (var i = 0, l = buffer.length; i < l; i++) {
       if (buffer[i] === -10000) {
@@ -105,6 +104,7 @@ Partrace = Class.extend({
     this.start_render = (new Date()).getTime();
     this.workers = [];
     this.workersDone = 0;
+    this._lastProgressRedraw = -1;
     this.element.width = setup.width || this.element.width;
     this.element.height = setup.height || this.element.height;
 
@@ -196,7 +196,20 @@ Partrace = Class.extend({
     };
   },
   onError: function (e) {
-    Partrace.log(['ERROR: Line ', e.lineno, ' in ', e.filename, ': ', e.message].join(''));
+    var worker = e.target;
+    var idx = this.workers.indexOf(worker);
+    Partrace.log('Worker ' + (idx >= 0 ? idx : '?') + ' error: ' +
+      (e.message || 'unknown error') +
+      (e.filename ? (' (' + e.filename + ':' + e.lineno + ')') : ''));
+    if (idx >= 0 && !this.workers[idx].done) {
+      try { this.workers[idx].terminate(); } catch (te) {}
+      this.workers[idx].done = true;
+      this.workersDone++;
+      if (this.workersDone === this.workers.length) {
+        this.copyColorToScreen();
+        Partrace.log('Render aborted: a worker failed.');
+      }
+    }
   },
   doProgress: function () {
     var p = 0;
@@ -206,7 +219,10 @@ Partrace = Class.extend({
     $("#progress").progressbar("option", {
       value: p
     });
-    if (p % 20 === 0) this.copyColorToScreen();
+    if (Math.floor(p / 20) > this._lastProgressRedraw) {
+      this._lastProgressRedraw = Math.floor(p / 20);
+      this.copyColorToScreen();
+    }
   },
   computeStats: function () {
     var stats = this.stats.rays;
@@ -225,13 +241,19 @@ Partrace = Class.extend({
   },
   mergeStats: function (w) {
     w = this.workers[w];
+    // objects/lights are scene-global counts identical across workers; take them once.
+    // All other top-level numeric stats accumulate across workers.
     for (var key in w.stats) {
       if (key === "rays" || key === "renderTime" || key === "id") continue;
-      if (!this.stats[key]) this.stats[key] = 0;
+      if (key === "objects" || key === "lights") {
+        if (this.stats[key] === undefined) this.stats[key] = parseInt(w.stats[key]);
+        continue;
+      }
+      if (this.stats[key] === undefined) this.stats[key] = 0;
       if (key.indexOf("percent") > 0) {
         this.stats[key] += parseFloat(w.stats[key]);
       } else {
-        if (!this.stats[key]) this.stats[key] = parseInt(w.stats[key]);
+        this.stats[key] += parseFloat(w.stats[key]) || 0;
       }
     }
     for (var key in w.stats.rays) {
@@ -242,10 +264,7 @@ Partrace = Class.extend({
   }
 });
 Partrace.log = function (msg) {
-  if (typeof msg === 'object') {
-    $("#log").prepend(JSON.stringify(msg, null, 2) + '<br>');
-  } else {
-    $("#log").prepend(msg + '<br>');
-  }
+  var line = (typeof msg === 'object') ? JSON.stringify(msg, null, 2) : String(msg);
+  $("#log").prepend(document.createElement('br')).prepend(document.createTextNode(line));
   console.log(msg);
 };

@@ -29,20 +29,6 @@ self.Math.sqr = self.Math.sqr || function (v) {
 self.Int32Array = self.Int32Array || Array;
 self.Float32Array = self.Float32Array || Array;
 
-String.prototype.startsWith = String.prototype.startsWith || function (str) {
-  return this.slice(0, str.length) === str;
-};
-
-String.prototype.endsWith = String.prototype.endsWith || function (str) {
-  if (!str) return false;
-  var index = this.lastIndexOf(str);
-  return (-1 < index && index) === (this.length - str.length);
-};
-
-String.prototype.trim = String.prototype.trim || function () {
-  return this.replace(/^\s+|\s+$/g, '');
-};
-
 vec4.norm = vec4.squaredLength;
 
 vec4.combine = function (out, a, b, f1, f2) {

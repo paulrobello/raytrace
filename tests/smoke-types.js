@@ -45,4 +45,13 @@ assert.strictEqual(renderer.scene.lights.length, 1, 'point light not registered'
 assert.strictEqual(renderer.scene.materials.length, 5, 'expected all 5 material types registered (basic, checker, checkermat, rainbow, combiner)');
 assert.strictEqual(renderer.scene.objects.length, 2, 'expected sphere + plane registered');
 
-console.log('smoke-types: OK (1 light, 5 materials, 2 objects all instantiated)');
+// Regression for the latent string-form-vector bug: Partrace.vToVec4 called
+// String.prototype.explode (defined nowhere) on the string branch, so any scene
+// using "r,g,b" vector strings threw. Now uses native split.
+var sv = Partrace.vToVec4('1,2,3', 1);
+assert.ok(
+  sv && sv.length === 4 && sv[0] === 1 && sv[1] === 2 && sv[2] === 3 && sv[3] === 1,
+  'vToVec4 string-form parse failed: got ' + JSON.stringify(Array.from(sv))
+);
+
+console.log('smoke-types: OK (1 light, 5 materials, 2 objects, string-form vectors)');

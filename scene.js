@@ -122,7 +122,7 @@ Partrace.Scene = Class.extend({
       vec4.add(color, color, lightColor);
       if (depth < this.maxDepth) {
         if (this.doReflect && mr > 0 && !ray.inside) {
-          var rRay = new Partrace.Ray('reflect', ray.p, ray.d);
+          var rRay = new Partrace.Ray('reflect', vec4.clone(ray.p), vec4.clone(ray.d));
           vec4.reflect(rRay.d, ray.d, ip.n);
           vec4.normalize(rRay.d, rRay.d);
           vec4.project(rRay.p, ip.ip, rRay.d, Partrace.epsilon);
@@ -140,7 +140,6 @@ Partrace.Scene = Class.extend({
           vec4.add(color, color, rColor);
         } // end do reflect
         if (this.doRefract && ma < 1) {
-          //debugger;
           var n = ir / mir;
           var nvec = ip.n;
           if (ray.inside) {
@@ -150,7 +149,7 @@ Partrace.Scene = Class.extend({
           var cosI = -vec4.dot(nvec, ray.d);
           var cosT2 = 1 - (n * n) * (1 - (cosI * cosI));
           if (cosT2 > 0) {
-            var rRay = new Partrace.Ray('refract', ray.p, ray.d);
+            var rRay = new Partrace.Ray('refract', vec4.clone(ray.p), vec4.clone(ray.d));
             var rColor = vec4.create();
             vec4.combine(rRay.d, ray.d, nvec, n, n * cosI - Math.sqrt(cosT2));
             vec4.normalize(rRay.d, rRay.d);
@@ -212,25 +211,29 @@ Partrace.Scene = Class.extend({
     } else {
       this.fog = null;
     }
-    var i = json.lights.length;
-    while (i--) {
-      var obj = json.lights[i];
-      if (obj.disabled === true) continue;
+    var i;
+    if (json.lights) {
+      i = json.lights.length;
+      while (i--) {
+        var obj = json.lights[i];
+        if (obj.disabled === true) continue;
 
-      var newobj = null;
+        var newobj = null;
 
-      switch (obj.type) {
-      case 'point':
-        newobj = new Partrace.Lights.Point();
-        break;
-      default:
-        Partrace.log('Unknown light type: ' + obj.type);
-      }
-      if (newobj) {
-        newobj.setPropsFromJson(obj);
-        this.add(newobj);
+        switch (obj.type) {
+        case 'point':
+          newobj = new Partrace.Lights.Point();
+          break;
+        default:
+          Partrace.log('Unknown light type: ' + obj.type);
+        }
+        if (newobj) {
+          newobj.setPropsFromJson(obj);
+          this.add(newobj);
+        }
       }
     }
+    if (json.materials) {
     i = json.materials.length;
     while (i--) {
       var obj = json.materials[i];
@@ -251,7 +254,7 @@ Partrace.Scene = Class.extend({
         newobj = new Partrace.Materials.Rainbow();
         break;
       case 'combiner':
-        newobj = new new Partrace.Materials.Combiner();
+        newobj = new Partrace.Materials.Combiner();
         break;
       default:
         Partrace.log('Unknown material type: ' + obj.type);
@@ -261,6 +264,8 @@ Partrace.Scene = Class.extend({
         this.add(newobj);
       }
     }
+    }
+    if (json.objects) {
     i = json.objects.length;
     while (i--) {
       var obj = json.objects[i];
@@ -281,6 +286,7 @@ Partrace.Scene = Class.extend({
         newobj.setPropsFromJson(obj);
         this.add(newobj);
       }
+    }
     }
   }
 });

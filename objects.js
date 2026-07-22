@@ -1,21 +1,24 @@
 Partrace.Objects.Sphere=Partrace.Objects.MaterialObj.extend({
   init:function(parent,radius,material){
-    this._super(parent,material);        
+    this._super(parent,material);
     this.setRadius(radius||0.5);
-    this.wdst=vec4.create(); // work var
+    this.wlp=vec4.create(); // work var: local ray position
+    this.wld=vec4.create(); // work var: local ray direction
+    this.wdst=vec4.create(); // work var: scratch (zeroed-w copy of lp)
   },
   setRadius:function(r){
     this.radius = r;
     this.radius2 = this.radius*this.radius;
   },
   intersect:function(ray){
-    var ip = new Partrace.Intersection(ray,this);
-    this.absoluteToLocal(ip.lp,ip.p);
-    this.absoluteToLocal(ip.ld,ip.d);
+    var lp=this.wlp;
+    var ld=this.wld;
+    this.absoluteToLocal(lp,ray.p);
+    this.absoluteToLocal(ld,ray.d);
     var dst=this.wdst;
-    vec4.copy(dst,ip.lp);
+    vec4.copy(dst,lp);
     dst[3]=0;
-    var b = vec4.dot(dst,ip.ld);
+    var b = vec4.dot(dst,ld);
     var c = vec4.dot(dst,dst)-this.radius2;
     var d=(b*b)-c;
     if (d<Partrace.epsilon) return false;
@@ -23,6 +26,9 @@ Partrace.Objects.Sphere=Partrace.Objects.MaterialObj.extend({
     var t1=-b-d;
     var t2=-b+d;
     if (t1<0 && t2<0) return false;
+    var ip = new Partrace.Intersection(ray,this);
+    vec4.copy(ip.lp,lp);
+    vec4.copy(ip.ld,ld);
     if (t1>0){
       vec4.project(ip.lip,ip.lp,ip.ld,t1);
     }else{
@@ -32,7 +38,7 @@ Partrace.Objects.Sphere=Partrace.Objects.MaterialObj.extend({
     this.localToAbsolute(ip.ip,ip.lip);
     ip.dist2=vec4.squaredDistance(ray.p,ip.ip);
     return ip;
-  },    
+  },
   normal:function(ray){
     var ip = ray.ip;
     if (ip.n) {
@@ -63,33 +69,41 @@ Partrace.Objects.Plane=Partrace.Objects.MaterialObj.extend({
     this._super(parent,material);
     this.width=width||5;
     this.height=height||5;
-    this.wsp=vec4.create(); // work var
+    this.wlp=vec4.create(); // work var: local ray position
+    this.wld=vec4.create(); // work var: local ray direction
+    this.wlip=vec4.create(); // work var: local intersection point
+    this.wsp=vec4.create(); // work var: scratch (negated zeroed-w copy of lp)
   },
   intersect:function(ray){
-    var ip = new Partrace.Intersection(ray,this);
-    this.absoluteToLocal(ip.lp,ip.p);
-    this.absoluteToLocal(ip.ld,ip.d);
+    var lp=this.wlp;
+    var ld=this.wld;
+    this.absoluteToLocal(lp,ray.p);
+    this.absoluteToLocal(ld,ray.d);
     var n = this.getAbsoluteUp();
     var sp = this.wsp;
-    vec4.copy(sp,ip.lp);
+    vec4.copy(sp,lp);
     vec4.negate(sp,sp);
     sp[3]=0;
-    var d = vec4.dot(ip.ld,n);
-//    if (d>Partrace.epsilon || d<-Partrace.epsilon) return false;
+    var d = vec4.dot(ld,n);
     if (d>Partrace.epsilon) return false;
-          
+
     d=1/d;
-    var t = vec4.dot(sp,n)*d;    
+    var t = vec4.dot(sp,n)*d;
     if (t<=0) return false;
-    vec4.combine(ip.lip,ip.lp,ip.ld,1,t);    
-    if (this.with!==0 && this.height!==0){
-      if ( (Math.abs(ip.lip[0])>0.5*this.width) || (Math.abs(ip.lip[2])>0.5*this.height) ) return false;
+    var lip=this.wlip;
+    vec4.combine(lip,lp,ld,1,t);
+    if (this.width!==0 && this.height!==0){
+      if ( (Math.abs(lip[0])>0.5*this.width) || (Math.abs(lip[2])>0.5*this.height) ) return false;
     }
-    
+
+    var ip = new Partrace.Intersection(ray,this);
+    vec4.copy(ip.lp,lp);
+    vec4.copy(ip.ld,ld);
+    vec4.copy(ip.lip,lip);
     this.localToAbsolute(ip.ip,ip.lip);
     ip.dist2=vec4.squaredDistance(ray.p,ip.ip);
     return ip;
-  },    
+  },
   normal:function(ray){
     var ip = ray.ip;
     if (ip.n) {

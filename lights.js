@@ -70,7 +70,7 @@ Partrace.Lights.Point=Partrace.Light.extend({
 
     var oi=1; //attenuation modifyer for soft shadows and caustics
 
-    if (this.scene.doShadows && this.castShadows && ip.object.receveShadows && !ip.ray.inside){
+    if (this.scene.doShadows && this.castShadows && ip.object.receiveShadows && !ip.ray.inside){
       var sRay=new Partrace.Ray('shadow',ip.ip,l);
       vec4.project(sRay.p,sRay.p,sRay.d,Partrace.epsilon);
       sRay.depth=ip.ray.depth;
