@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <!-- Security response headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy) are served via the repo-root _headers file (Cloudflare Pages / Netlify). A strict Content-Security-Policy is deferred until the Phase-4 ES-module migration externalizes the inline script and style blocks, which makes a real script-src CSP feasible without 'unsafe-inline'. -->
     <title>PARTrace JS</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <link type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.2/themes/ui-lightness/jquery-ui.min.css" rel="stylesheet" />
+    <link type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.2/themes/ui-lightness/jquery-ui.min.css" integrity="sha384-M2pbgPLnkMLRvtP1q0TDqxe5wLkGHavhDOgGI3GP57g54WTM6MQ/MHYneum5st0P" crossorigin="anonymous" rel="stylesheet" />
     <link type="text/css" href="/css/main.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.2/jquery-ui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.min.js" integrity="sha384-GI1H4/QJiNnNqckCvEHsRWnEq0wXbnHwgcnl0OajhH2/3SR4toFpqRYKqmvuHQuZ" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.2/jquery-ui.min.js" integrity="sha384-qMvgAsIqS01waWHzN25xidpfcoTL/TcMWzf3j39ueYCGVtOHOaWCyBnKlqUgp8vH" crossorigin="anonymous"></script>
 
     <script src="/js/gl-matrix-min.js"></script>
     <script src="/js/gl-matrix-globals.js"></script>
 
-    <script src="/js/core-extimator/core-estimator.min.js"></script>
     <script src="/js/class.js"></script>
     <script src="/js/par.js"></script>
     <script src="/parmath.js"></script>
@@ -219,16 +218,8 @@
   }
   $(document).ready(function(){
     $("#render").button().button("disable");
-    if (!navigator.hardwareConcurrency || navigator.hardwareConcurrency<2) {
-      navigator.getHardwareConcurrency(function(cores){
-        navigator.hardwareConcurrency=cores;
-        console.log("Cores Detected",navigator.hardwareConcurrency);
-        $("#render").button("enable");
-      });
-    }else{
-      console.log("Native Cores",navigator.hardwareConcurrency);
-      $("#render").button("enable");
-    }
+    console.log("Native Cores",navigator.hardwareConcurrency);
+    $("#render").button("enable");
     partrace=new Partrace("canvas");
     $("#progress").progressbar();
     $("#reset").button().click(function(){
@@ -245,7 +236,7 @@
       try{
         partrace.render(JSON.parse($("#script").val().replace(/(\#.*)/g,'')));
       }catch(e){
-        alert(e);
+        if (window.Partrace && Partrace.log) { Partrace.log('Render error: ' + (e && e.message ? e.message : e)); } else { console.error(e); }
       }
     });
     $(".buffer").click(function(){
@@ -255,7 +246,6 @@
         partrace.copyZToScreen();
       }
     });
-  //  setTimeout(function(){$("#render").click();},1000);
     if(typeof(localStorage) !== "undefined") {
       var scn=localStorage.getItem('scene');
       if (scn) $('#script').val(scn);
