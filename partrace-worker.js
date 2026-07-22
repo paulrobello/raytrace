@@ -1,6 +1,7 @@
 self.onmessage=function(event){
   importScripts(
     "/js/gl-matrix-min.js",
+    "/js/gl-matrix-globals.js",
     "/js/class.js",
     "/js/par.js",
     "/utils.js",
