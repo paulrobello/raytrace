@@ -61,12 +61,6 @@ export const Partrace = Class.extend({
     );
     return p;
   },
-  clearBuffer: function (buffer) {
-    for (var i = 0, l = this.width * this.height * 4; i < l; i++) {
-      buffer.data[i] = ((i + 1) % 4 === 0) ? 255 : 0;
-    }
-    return this;
-  },
   copyBufferToScreen: function (buffer) {
     this.ctx.putImageData(buffer, 0, 0);
     return this;

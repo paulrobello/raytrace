@@ -3,7 +3,7 @@ import { vec4 } from './js/vecmath.js';
 import { Partrace } from './partrace-threaded.js';
 
 Partrace.Light=BaseObj.extend({
-  init: function(partrace,parent){
+  init: function(parent){
     this._super(parent);
 
     this.attenuationType='none';
