@@ -49,7 +49,7 @@ Vector and color fields accept any of the following, coerced by `Partrace.vToVec
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `bg_color` | color | `[0, 0, 0]` (black) | Background color used when a ray misses every object. Also the default fog color. |
-| `camera` | object | origin looking at `0,0,0` | See [Camera](#camera). |
+| `camera` | object | `[0,0,-1]` looking at `0,0,0` | See [Camera](#camera). |
 | `fog` | object | `null` (disabled) | See [Fog](#fog). Present but `disabled:true` means no fog. |
 | `lights` | array | `[]` | See [Lights](#lights). |
 | `materials` | array | `[]` | See [Materials](#materials). Materials are referenced by `name` from objects and from other materials. |
@@ -171,12 +171,12 @@ Registered object types live in `Partrace.OBJECT_TYPES` (`js/registry.js`). Ever
 
 ### `plane`
 
-An axis-aligned plane (in the object's local XZ plane). When `width` and `height` are both non-zero the plane is bounded; set either to `0` for an infinite plane along that axis.
+An axis-aligned plane (in the object's local XZ plane). When `width` and `height` are both non-zero the plane is bounded to those extents; if either is `0` the bounds check is skipped and the plane is infinite in both axes.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `width` | number | `5` | Plane extent along the local X axis. `0` = infinite. (Read directly by the type factory.) |
-| `height` | number | `5` | Plane extent along the local Z axis. `0` = infinite. (Read directly by the type factory.) |
+| `width` | number | `5` | Plane extent along the local X axis. `0` disables bounding (see above). (Read directly by the type factory.) |
+| `height` | number | `5` | Plane extent along the local Z axis. `0` disables bounding (see above). (Read directly by the type factory.) |
 | `material` | string | default material | Name of the material to render the plane with. |
 
 ## Shared `BaseObj` Fields
@@ -201,7 +201,7 @@ The `fog` object uses the same flag with inverted presence semantics — see [Fo
 
 ## Default Scene
 
-This is the scene shipped in `index.html`'s textarea and the one rendered for `images/screenshot.png`.
+This is the scene shipped in `src/default-scene.js` (exported as `DEFAULT_SCENE` and loaded into the editor's textarea by `src/main.js`) and the one rendered for `images/screenshot.png`.
 
 ```json
 {

@@ -17,10 +17,10 @@ PARTrace is a CPU-only JavaScript ray tracer structured as a main-thread control
 
 PARTrace deliberately runs two classes that are both named `Partrace`, kept apart by the Worker realm boundary. This is intentional, and both files document it in their headers.
 
-- **Main realm** — `partrace.js` exports the controller `Partrace`. It owns the `<canvas>`, its image buffers, and the worker pool. It never ray-traces; it dispatches work and stitches results back together. Loaded from `index.html` via `<script type="module" src="/js/main.js">`, which imports `partrace.js`.
-- **Worker realm** — `partrace-threaded.js` exports a different `Partrace`: the renderer. Each worker constructs one instance, traces its assigned rows, and posts pixels back. Loaded via `partrace-worker.js`, which the main thread spawns with `new Worker('/partrace-worker.js', { type: 'module' })`.
+- **Main realm** — `partrace.js` exports the controller `Partrace`. It owns the `<canvas>`, its image buffers, and the worker pool. It never ray-traces; it dispatches work and stitches results back together, and reports lifecycle updates through optional hooks (`onProgress`, `onDone`, and the static `Partrace.onLog`) that the UI layer subscribes to. Loaded from `index.html` via `<script type="module" src="/src/main.js">`, which imports `partrace.js`.
+- **Worker realm** — `partrace-threaded.js` exports a different `Partrace`: the renderer. Each worker constructs one instance, traces its assigned rows, and posts pixels back. Loaded via `partrace-worker.js`, which the main thread spawns with `new Worker(new URL('./partrace-worker.js', import.meta.url), { type: 'module' })` — the `import.meta.url` form is what lets Vite detect and bundle the worker for production builds.
 
-The two `Partrace` classes never share a module instance — the worker realm imports only `partrace-threaded.js`, never `partrace.js`. jQuery (`$`) is available only in the main realm; the render core is framework-free.
+The two `Partrace` classes never share a module instance — the worker realm imports only `partrace-threaded.js`, never `partrace.js`. Both realms are framework-free: the main-realm UI (`src/main.js`) wires DOM controls directly with `addEventListener`, and the render core never touches the DOM.
 
 ```mermaid
 graph LR
@@ -30,7 +30,7 @@ graph LR
     Pool["Worker pool<br/>(one per CPU core)"]
 
     Page --> Main
-    Main -->|"new Worker(<br/>partrace-worker.js,<br/>{type:'module'})"| Pool
+    Main -->|"new Worker(new URL(<br/>'./partrace-worker.js',<br/>import.meta.url),<br/>{type:'module'})"| Pool
     Pool --> Worker
     Main -->|"postMessage<br/>init"| Worker
     Worker -->|"postMessage<br/>setRow / progress / stats / end"| Main
@@ -43,13 +43,13 @@ graph LR
 
 ## Module Graph
 
-There is no bundler. The browser resolves two ES-module import graphs, one per realm. `js/registry.js` is the bridge between the two: importing it (for side effects) attaches every scene-graph class to the shared `Partrace` namespace, then builds the JSON-type registries that `Scene.setPropsFromJson` looks up.
+The source is plain ES modules — Vite serves them unbundled in dev and bundles them for production, but in both cases the same two ES-module import graphs resolve, one per realm. `js/registry.js` is the bridge between the two: importing it (for side effects) attaches every scene-graph class to the shared `Partrace` namespace, then builds the JSON-type registries that `Scene.setPropsFromJson` looks up.
 
 ```mermaid
 graph TD
     subgraph Main["Main realm"]
         HTML["index.html"]
-        MainJS["js/main.js"]
+        MainJS["src/main.js"]
         Controller["partrace.js<br/>(controller)"]
         HTML --> MainJS
         MainJS --> Controller
@@ -91,7 +91,7 @@ graph TD
 
 Key points:
 
-- `js/main.js` is the main-realm entry; it wires the jQuery UI (Render / Reset / Save buttons, progress bar, buffer toggle) to the controller.
+- `src/main.js` is the main-realm entry; it is framework-free (DOM `addEventListener`) and wires the UI — Render / Reset / Save Image buttons, the progress bar, the Color/Depth buffer toggle, a scene-JSON editor, and a live ray-telemetry readout — to the controller through the `onProgress`, `onDone`, and `Partrace.onLog` hooks. The default scene it loads on first run comes from `src/default-scene.js`.
 - `partrace-worker.js` is the worker-realm entry; on the first `onmessage` it constructs a renderer, feeds it the setup JSON, and calls `render()`.
 - `js/vecmath.js` shallow-copies each gl-matrix namespace into a mutable object, attaches PARTrace's extensions, and re-exports. Nothing else imports gl-matrix directly.
 - `js/class.js` is John Resig's `Class.extend` inheritance helper, wrapped as an ESM export.

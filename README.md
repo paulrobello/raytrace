@@ -20,10 +20,10 @@ The quickest way:
 
 ```bash
 make serve
-# -> http://localhost:8000
+# -> http://localhost:5173
 ```
 
-`make serve` runs `python3 -m http.server 8000`. Any other static server (`npx serve`, `php -S`, nginx, a Cloudflare Pages deploy) works equally well — just serve the repo root.
+`make serve` runs the Vite dev server (`vite`) on port 5173, which resolves the ES-module import graph and the module worker on the fly. For a production build, run `make build` and serve the generated `dist/` directory with any static host (`npx serve dist`, nginx, Cloudflare Pages, GitHub Pages — see [Deployment](#deployment)).
 
 ## Quick Start
 
@@ -33,9 +33,9 @@ make serve
    ```bash
    make serve
    ```
-3. Open http://localhost:8000 in your browser.
+3. Open http://localhost:5173 in your browser.
 4. The right-hand **Scene** textarea holds the scene JSON (the default scene is preloaded). Click **Render**.
-5. Use the **Color / Z** radio buttons to toggle between the rendered image and a grayscale depth-buffer view. **Save Image** downloads the canvas as a PNG. **Reset Scene** restores the default.
+5. Use the **Color / Depth** radio buttons to toggle between the rendered image and a grayscale depth-buffer view. **Save Image** downloads the canvas as a PNG. **Reset** restores the default.
 
 Your edited scene is persisted to `localStorage`, so it survives reloads.
 
@@ -80,29 +80,31 @@ PARTrace runs in two realms separated by the Worker boundary:
 - **Main thread** — the `Partrace` controller in `partrace.js` owns the canvas, spawns one module Web Worker per CPU core, and stitches each worker's row-slice back into the image buffer.
 - **Worker realm** — each worker runs the `Partrace` renderer in `partrace-threaded.js`, ray-tracing its assigned horizontal slice of rows. Workers and the main thread communicate solely by `postMessage`.
 
-There is no bundler. The browser resolves the ES-module import graph from two entry points: `js/main.js` (main realm, loaded via `<script type="module">`) and `partrace-worker.js` (the module worker). Scene-graph files attach their classes to a shared `Partrace` namespace object that each file imports, and `js/registry.js` is the single source of truth mapping JSON type names to constructors.
+Vite is the dev server and bundler. The ES-module import graph has two entry points: `src/main.js` (main realm, loaded via `<script type="module">` in `index.html`) and `partrace-worker.js` (the module worker, spawned via `new Worker(new URL('./partrace-worker.js', import.meta.url), { type: 'module' })`, which Vite detects and bundles automatically). Scene-graph files attach their classes to a shared `Partrace` namespace object that each file imports, and `js/registry.js` is the single source of truth mapping JSON type names to constructors.
 
 For the full module graph, the worker message protocol, the namespace-attachment pattern, the `Class.extend` / `_super` convention, and the row-partitioning parallelism, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Development
 
 ```bash
-make install      # npm install (dev dependencies: ESLint)
+make install      # npm install (dev dependencies: ESLint, Vite, fonts)
+make build        # vite build -> dist/ (production bundle)
 make checkall     # lint + tests (the verification gate)
 make lint         # ESLint only
 make fmt          # ESLint --fix
 make test         # type-registry smoke test + headless render
 make screenshot   # regenerate images/screenshot.png from the default scene
-make serve        # serve over HTTP on :8000
+make serve        # Vite dev server on http://localhost:5173
+make clean        # remove node_modules
 ```
 
-`make checkall` is the gate: it runs ESLint, a smoke test that instantiates every registered scene type from its JSON name, and a headless render. `make screenshot` renders the default scene in Node and writes `images/screenshot.png`.
+`make checkall` is the gate: it runs ESLint, a smoke test that instantiates every registered scene type from its JSON name, and a headless render. `make build` produces the static bundle in `dist/` that the GitHub Pages deploy publishes. `make screenshot` renders the default scene in Node and writes `images/screenshot.png`.
 
-There is no build step and no type system — the JavaScript is served as-is.
+There is no type system — the JavaScript is plain ES modules.
 
 ## Deployment
 
-The site is published to GitHub Pages at **<https://raytrace.pardev.net>** automatically by [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) on every push to `main`. The custom domain is configured via the repo-root [`CNAME`](CNAME) file. There is no build step, so the deploy simply uploads the repo root as a static site.
+The site is published to GitHub Pages at **<https://raytrace.pardev.net>** automatically by [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) on every push to `main`. The workflow runs `npm ci`, `npm run build` (Vite), and uploads the resulting `dist/` directory as the Pages artifact. The custom domain is configured via the repo-root [`CNAME`](CNAME) file.
 
 ## License
 
