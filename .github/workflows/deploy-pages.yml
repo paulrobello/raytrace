@@ -36,6 +36,14 @@ jobs:
       - name: Install
         run: npm ci
 
+      # Gate the deploy: a lint or test failure fails the job before the Pages
+      # steps run, so a broken build is never published.
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
 
