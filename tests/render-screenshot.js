@@ -4,25 +4,27 @@
 // to COPY each setRow's color buffer immediately: the renderer reuses a single
 // row buffer across all rows, so capturing references after render() returns
 // would yield only the last row. PNG is encoded with Node's zlib (no deps).
+//
+// The render runs through the REAL row partition (Partrace.partitionRows), one
+// sequential pass per band, so the output reflects what the browser's worker
+// pool actually produces — including any band-boundary seam.
 import { createWorkerScope } from './loader.js';
+import { Partrace as Controller } from '../partrace.js';
+import { DEFAULT_SCENE } from '../src/default-scene.js';
 import { deflateSync, crc32 } from 'zlib';
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 
-// Pull the default scene straight out of index.html's textarea (single source),
-// stripping the `#` comment lines exactly the way the Render click handler does.
-const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const m = html.match(/<textarea id="script"[^>]*>([\s\S]*?)<\/textarea>/);
-if (!m) throw new Error('could not find default scene textarea in index.html');
-const ta = m[1];
-const setup = JSON.parse(ta.replace(/(\#.*)/g, ''));
+// The default scene lives in src/default-scene.js — the same single source the
+// UI loads into the editor. Strip `#` comment lines the way main.js does.
+const setup = JSON.parse(DEFAULT_SCENE.replace(/#.*$/gm, ''));
 
 const W = Number(process.env.PARTRACE_SS_W || setup.width || 800);
 const H = Number(process.env.PARTRACE_SS_H || setup.height || 600);
+// Fixed default so the image is deterministic, and 600/16 = 37.5 exercises a
+// non-integer naive split — the case that used to shear alternating bands.
+const WORKERS = Number(process.env.PARTRACE_SS_WORKERS || setup.maxWorkers || 16);
 setup.width = W;
 setup.height = H;
-setup.startY = 0;
-setup.endY = H;
-setup.id = 0;
 
 const { Partrace } = createWorkerScope();
 
@@ -37,15 +39,22 @@ globalThis.postMessage = function (msg) {
   messages.push(msg);
 };
 
-const renderer = new Partrace();
-renderer.setPropsFromJson(setup);
-
+const bands = Controller.partitionRows(H, WORKERS);
 const t0 = Date.now();
-renderer.render();
+for (let w = 0; w < bands.length; w++) {
+  const renderer = new Partrace();
+  renderer.setPropsFromJson(Object.assign({}, setup, {
+    id: w,
+    startY: bands[w].startY,
+    endY: bands[w].endY
+  }));
+  renderer.render();
+}
 const ms = Date.now() - t0;
 
-const stats = messages.find((m) => m && m.status === 'stats');
-const rays = stats && stats.stats && stats.stats.rays ? stats.stats.rays.total : 0;
+const rays = messages
+  .filter((m) => m && m.status === 'stats')
+  .reduce((sum, m) => sum + ((m.stats && m.stats.rays && m.stats.rays.total) || 0), 0);
 
 // Assemble into an RGB buffer (alpha discarded — the rendered RGB is final).
 const rgb = Buffer.alloc(W * H * 3);
