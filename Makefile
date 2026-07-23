@@ -4,7 +4,7 @@ install:
 	npm install
 
 build:
-	@echo "build: no build step (static JS assets served as-is)"
+	vite build
 
 test:
 	node tests/smoke-types.js
@@ -29,5 +29,5 @@ screenshot:
 	node tests/render-screenshot.js
 
 serve:
-	@echo "serving on http://localhost:8000 (ES module workers require HTTP, not file://)"
-	python3 -m http.server 8000
+	@echo "dev server on http://localhost:5173 (vite)"
+	vite

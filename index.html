@@ -1,203 +1,83 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <!-- Security response headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Content-Security-Policy) are served via the repo-root _headers file (Cloudflare Pages / Netlify). With the ES-module migration complete, the page has no inline <script>; the CSP's script-src is now 'self' + the cdnjs origin only (no 'unsafe-inline'). The inline <style> below remains, so style-src carries 'unsafe-inline'. -->
-    <title>PARTrace JS</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <link type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.2/themes/ui-lightness/jquery-ui.min.css" integrity="sha384-M2pbgPLnkMLRvtP1q0TDqxe5wLkGHavhDOgGI3GP57g54WTM6MQ/MHYneum5st0P" crossorigin="anonymous" rel="stylesheet" />
-    <link type="text/css" href="css/main.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.min.js" integrity="sha384-GI1H4/QJiNnNqckCvEHsRWnEq0wXbnHwgcnl0OajhH2/3SR4toFpqRYKqmvuHQuZ" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.2/jquery-ui.min.js" integrity="sha384-qMvgAsIqS01waWHzN25xidpfcoTL/TcMWzf3j39ueYCGVtOHOaWCyBnKlqUgp8vH" crossorigin="anonymous"></script>
-
-    <style>
-    body {
-      font-family: Monospace;
-      border:0;
-      margin:0;
-      padding:0;
-      width:100%;
-    }
-    #output {
-      border:0;
-      margin:0;
-      padding:0;
-      width:100%;
-    }
-    canvas {
-      padding: 0;
-      margin: 0;
-      border: 0px solid black;
-      background-color: #000;
-      z-index:1;
-    }
-    #progress{
-      width:99%;
-      height:24px;
-    }
-    #render {
-    }
-    #log {
-      width:99%;
-      min-height:200px;
-      overflow:auto;
-      border:1px solid black;
-      margin-top:5px;
-      white-space:pre;
-    }
-    #script {
-      border:1px solid black;
-      width:100%;
-      height:100%;
-    }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PARTrace — CPU Ray Tracer</title>
+    <meta
+      name="description"
+      content="A pure-CPU JavaScript ray tracer. Edit the scene and render in your browser — no GPU, every pixel traced in Web Workers."
+    />
+    <script type="module" src="/src/main.js"></script>
   </head>
   <body>
-    <div id="tools">
-      <div id="reset" class="button">Reset Scene</div>
-      <div id="render" class="button">Render</div>
-      <div id="save" class="button">Save Image</div>
-      <label>Buffer:</label>
-      <label>Color</label><input type="radio" class="buffer" value="color" name="buffer" checked>
-      <label>Z</label><input type="radio" class="buffer" value="zbuffer" name="buffer">
-    </div>
-    <table id="output">
-      <tr>
-        <td width="50%" style="vertical-align:top">
-          <canvas id="canvas" width="800" height="600"></canvas>
-        </td>
-        <td width="50%" style="vertical-align:top">
-          <label for="script"><h4>Scene</h4></label><br>
-          <form id="form">
-            <textarea id="script" rows="33" cols="80">
-# lines starting with # are comments
-{
-  # 0 = auto detect or set to number of cpu cores
-  "maxWorkers":0,
-  # width and height of image
-  "width":800,
-  "height":600,
-  # 0 = off, 1=3x3, 2=5x5
-  "antiAlias":0,
-  # 0=disable adaptive aa
-  "aaThreshold":0.001,
-  "doReflect":true,
-  "doRefract":true,
-  "doShadows":true,
-  "scene":{
-    "bg_color":[0,0,0],
-    "camera":{
-      "position":[0,0,-2.5],
-      "fov":90
-    },
-    "fog":{
-      "disabled":true,
-      # "linear","exp","exp2"
-      "type":"linear",
-      "near":1,
-      "far":9
-    },
-    "lights":[
-      {
-        "disabled":false,
-        "type":"point",
-        "position":[5,5,-3],
-        # "phong","blinn"
-        "shader":"phong",
-        # "none","linear","squared"
-        "attenuationType":"squared",
-        "fallOffRadius":12
-      }
-    ],
-    "materials":[
-      {
-        "name":"checker",
-        "type":"checker",
-        "scale":[0.1,0.1,0.05],
-        "specular":[1,1,1],
-        "shiny":128
-      },
-      {
-        "name":"blue",
-        "type":"basic",
-        "diffuse":[0,0,1],
-        "shiny":16,
-        "reflect":0.95,
-        "metallic":true
-      },
-      {
-        "name":"red",
-        "type":"basic",
-        "diffuse":[0.9,0,0],
-        "specular":[0.9,0,0],
-        "shiny":16,
-        "reflect":0.25
-      },
-      {
-        "name":"glass",
-        "type":"basic",
-        "diffuse":[1,0,0,0.75],
-        "refract":1.2,
-        "shiny":128
-      },
-      {
-        "name":"checkermat",
-        "type":"checkermat",
-        "diffuse":[0,1,0],
-        "diffuse1":"rainbow",
-        "diffuse2":"green",
-        "scale":[0.1,0.1,0.05]
-      },
-      {
-        "name":"green",
-        "type":"basic",
-        "diffuse":[0,1,0]
-      },
-      {
-        "name":"rainbow",
-        "type":"rainbow",
-        "offset":[2,-3,3]
-      }
-    ],
-    "objects":[
-      {
-        "name":"left Sphere",
-        "type":"sphere",
-        "material":"checker",
-        "radius":1,
-        "position":[-1.25,0,0]
-      },
-      {
-        "name":"right Sphere",
-        "type":"sphere",
-        "material":"blue",
-        "radius":1,
-        "position":[1.25,0,0]
-      },
-      {
-        "name":"glass Sphere",
-        "type":"sphere",
-        "material":"glass",
-        "radius":0.5,
-        "position":[0.75,-0.5,-1.25]
-      },
-      {
-        "name":"floor Plane",
-        "type":"plane",
-        "material":"checkermat",
-        "position":[0,-1,0]
-      }
-    ]
-  }
-}
-          </textarea>
-        </form>
-        <div id="progress"></div>
-      </td>
-    </tr>
-  </table>
-  <div id="log"></div>
+    <header class="appbar">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true">◢</span>
+        <div class="brand__text">
+          <h1>PARTrace</h1>
+          <p>CPU ray tracer <span aria-hidden="true">·</span> <span id="coreCount">— cores</span></p>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="renderBtn" class="btn btn--primary" type="button" title="Ctrl/⌘ + Enter">
+          Render <kbd aria-hidden="true">⌘↵</kbd>
+        </button>
+        <button id="resetBtn" class="btn" type="button">Reset</button>
+        <button id="saveBtn" class="btn" type="button">Save Image</button>
+      </div>
+    </header>
 
-  <script type="module" src="js/main.js"></script>
-</body>
+    <main class="workspace">
+      <section class="viewport" aria-label="Render viewport">
+        <div class="viewport__frame">
+          <canvas id="canvas" width="800" height="600"></canvas>
+          <div class="viewport__sweep is-idle" id="sweep" aria-hidden="true"></div>
+          <div class="viewport__empty" id="emptyState">Press Render to trace the scene</div>
+        </div>
+
+        <div class="telemetry" aria-label="Render telemetry">
+          <div class="metric metric--lg">
+            <span class="metric__label">Rays</span>
+            <span class="metric__value" id="mRays">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Rays / sec</span>
+            <span class="metric__value" id="mRaysSec">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Time</span>
+            <span class="metric__value" id="mTime">—</span>
+          </div>
+          <div class="progress" aria-label="Render progress">
+            <div class="progress__bar" id="progressBar"></div>
+            <span class="progress__pct" id="progressPct">0%</span>
+          </div>
+          <div class="raybreak" id="rayBreak" aria-label="Ray type breakdown"></div>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <section class="panel panel--editor">
+          <div class="panel__head">
+            <h2>Scene</h2>
+            <div class="buffer-toggle" role="group" aria-label="Buffer view">
+              <label class="seg"><input type="radio" name="buffer" value="color" checked /><span>Color</span></label>
+              <label class="seg"><input type="radio" name="buffer" value="z" /><span>Depth</span></label>
+            </div>
+          </div>
+          <textarea id="scene" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          <p class="panel__hint">JSON with <code>#</code> comments. Edited scenes persist across reloads.</p>
+        </section>
+
+        <section class="panel panel--log">
+          <div class="panel__head">
+            <h2>Log</h2>
+            <button id="clearLog" class="linkbtn" type="button">clear</button>
+          </div>
+          <pre id="log" class="log"></pre>
+        </section>
+      </aside>
+    </main>
+  </body>
 </html>

@@ -1,12 +1,18 @@
-// MAIN-THREAD controller (jQuery + canvas + Worker pool). A separate worker-realm
+// MAIN-THREAD controller (canvas + Worker pool). A separate worker-realm
 // renderer also named Partrace lives in partrace-threaded.js; they are
 // realm-separated by the Worker boundary (audit A2).
+//
+// Framework-agnostic: the controller owns the canvas and worker pool and
+// reports render lifecycle events through optional hooks the UI subscribes to:
+//   partrace.onProgress(percent)        // 0..100, throttled during render
+//   partrace.onDone(elapsedMs, stats)   // once the full render completes
+//   Partrace.onLog(line)                // every log line (stats, errors, timing)
 import { Class } from './js/class.js';
 import { vec4 } from './js/vecmath.js';
 
 export const Partrace = Class.extend({
   init: function (canvas) {
-    this.element = document.getElementById(canvas);
+    this.element = typeof canvas === 'string' ? document.getElementById(canvas) : canvas;
     this.width = this.element.width;
     this.height = this.element.height;
     this.ctx = this.element.getContext("2d");
@@ -18,6 +24,13 @@ export const Partrace = Class.extend({
       rays: {}
     };
     this.start_render = 0;
+    this._lastProgressRedraw = -1;
+    // UI hooks (assigned by the UI layer); no-op until wired.
+    this.onProgress = null;
+    this.onDone = null;
+    // Bound once so each render's listeners share the same references.
+    this._onMessage = this.onMessage.bind(this);
+    this._onError = this.onError.bind(this);
   },
   allocateBuffers: function () {
     this.colorBuffer = this.ctx.createImageData(this.width, this.height);
@@ -111,6 +124,7 @@ export const Partrace = Class.extend({
     this.workers = [];
     this.workersDone = 0;
     this._lastProgressRedraw = -1;
+    this.stats = { rays: {} };
     this.element.width = setup.width || this.element.width;
     this.element.height = setup.height || this.element.height;
 
@@ -119,24 +133,23 @@ export const Partrace = Class.extend({
     this.ctx = this.element.getContext("2d");
     this.allocateBuffers();
 
-    var width = this.width;
     var height = this.height;
 
-    setup.width = width;
-    setup.height = height;
+    setup.width = this.width;
+    setup.height = this.height;
     this.maxWorkers = setup.maxWorkers ? setup.maxWorkers : navigator.hardwareConcurrency || 2;
 
-    var workerSetup = $.extend({}, setup);
+    var workerSetup = Object.assign({}, setup);
 
     var wy = height / this.maxWorkers;
     for (var w = 0; w < this.maxWorkers; w++) {
-      var worker = new Worker('/partrace-worker.js', { type: 'module' });
+      var worker = new Worker(new URL('./partrace-worker.js', import.meta.url), { type: 'module' });
       worker.postMessage = worker.webkitPostMessage || worker.postMessage;
       worker.progress = 0;
       worker.stats = {};
       worker.done = false;
-      worker.addEventListener('message', $.proxy(this, 'onMessage'), false);
-      worker.addEventListener('error', $.proxy(this, 'onError'), false);
+      worker.addEventListener('message', this._onMessage, false);
+      worker.addEventListener('error', this._onError, false);
       var sy = wy * w;
       workerSetup.startY = sy;
       workerSetup.endY = sy + wy;
@@ -147,6 +160,7 @@ export const Partrace = Class.extend({
       });
       this.workers.push(worker);
     }
+    if (this.onProgress) this.onProgress(0);
   },
   // Worker message protocol reference (audit D4). The main thread and the worker
   // realm (partrace-threaded.js) communicate ONLY by postMessage. See the
@@ -205,7 +219,7 @@ export const Partrace = Class.extend({
       Partrace.log(data.msg);
       break;
     case 'progress':
-      var w = this.workers[data.id].progress = data.progress;
+      this.workers[data.id].progress = data.progress;
       this.doProgress();
       break;
     case 'end':
@@ -221,10 +235,12 @@ export const Partrace = Class.extend({
         this.computeStats();
         Partrace.log(this.stats);
         Partrace.log('Total render time ' + this.start_render.toFixed(0) + ' ms');
+        if (this.onProgress) this.onProgress(100);
+        if (this.onDone) this.onDone(this.start_render, this.stats);
       }
       break;
     case 'start':
-      Partrace.log('Worker started '+data.id);
+      Partrace.log('Worker started ' + data.id);
       break;
     default:
       console.log('Unknown event', evt);
@@ -242,6 +258,8 @@ export const Partrace = Class.extend({
       this.workersDone++;
       if (this.workersDone === this.workers.length) {
         this.copyColorToScreen();
+        if (this.onProgress) this.onProgress(100);
+        if (this.onDone) this.onDone((new Date()).getTime() - this.start_render, this.stats);
         Partrace.log('Render aborted: a worker failed.');
       }
     }
@@ -251,9 +269,7 @@ export const Partrace = Class.extend({
     for (var i = 0, l = this.workers.length; i < l; i++) {
       p += this.workers[i].progress / this.workers.length;
     }
-    $("#progress").progressbar("option", {
-      value: p
-    });
+    if (this.onProgress) this.onProgress(p);
     if (Math.floor(p / 20) > this._lastProgressRedraw) {
       this._lastProgressRedraw = Math.floor(p / 20);
       this.copyColorToScreen();
@@ -300,6 +316,6 @@ export const Partrace = Class.extend({
 });
 Partrace.log = function (msg) {
   var line = (typeof msg === 'object') ? JSON.stringify(msg, null, 2) : String(msg);
-  $("#log").prepend(document.createElement('br')).prepend(document.createTextNode(line));
   console.log(msg);
+  if (Partrace.onLog) Partrace.onLog(line);
 };
