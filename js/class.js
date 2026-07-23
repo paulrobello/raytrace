@@ -4,7 +4,7 @@
 // `this.Class` in the global scope, which is undefined inside an ES module).
 export const Class = (function () {
   var initializing = false,
-    fnTest = /xyz/.test(function () { xyz; }) ? /\b_super\b/ : /.*/;
+    fnTest = /xyz/.test(function () { "xyz"; }) ? /\b_super\b/ : /.*/;
   var Class = function () {};
   Class.extend = function extend(prop) {
     var _super = this.prototype;

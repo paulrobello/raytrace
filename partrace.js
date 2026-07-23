@@ -61,7 +61,7 @@ export const Partrace = Class.extend({
     );
     return p;
   },
-  clearBuffer: function (buffer, r, g, b, a) {
+  clearBuffer: function (buffer) {
     for (var i = 0, l = this.width * this.height * 4; i < l; i++) {
       buffer.data[i] = ((i + 1) % 4 === 0) ? 255 : 0;
     }
@@ -90,7 +90,7 @@ export const Partrace = Class.extend({
     }
     var r = hv - lv;
     if (r === 0) r = 1;
-    for (var i = 0, l = buffer.length; i < l; i++) {
+    for (i = 0, l = buffer.length; i < l; i++) {
       if (buffer[i] === -10000) {
         //buffer[i]=0;
       } else {
@@ -215,6 +215,7 @@ export const Partrace = Class.extend({
     case 'stats':
       this.workers[data.id].stats = data.stats;
       data.msg = data.stats;
+      // falls through
     case 'log':
       Partrace.log(data.msg);
       break;
@@ -307,7 +308,7 @@ export const Partrace = Class.extend({
         this.stats[key] += parseFloat(w.stats[key]) || 0;
       }
     }
-    for (var key in w.stats.rays) {
+    for (key in w.stats.rays) {
       if (key.indexOf("percent") > 0) continue;
       if (!this.stats.rays[key]) this.stats.rays[key] = 0;
       this.stats.rays[key] += parseInt(w.stats.rays[key]);

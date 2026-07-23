@@ -57,7 +57,7 @@ export const Partrace = Class.extend({
     var antiAlias = this.antiAlias;
     var aaThreshold = this.aaThreshold;
     var aaOffs = [];
-    var i, x, y, aao;
+    var x, y, aao;
     var aaStep=(1/antiAlias)/2
     for (x=-antiAlias;x<=antiAlias;x++){
       for (y=-antiAlias;y<=antiAlias;y++){

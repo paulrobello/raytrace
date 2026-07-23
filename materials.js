@@ -20,7 +20,7 @@ Partrace.Material = BaseObj.extend({
     this.metallic = false;
     this.offset = vec4.create();
   },
-  getAttrs: function (ray) {
+  getAttrs: function () {
     return this;
   },
   setDiffuse: function (v) {

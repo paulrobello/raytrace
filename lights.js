@@ -18,7 +18,7 @@ Partrace.Light=BaseObj.extend({
     this.al=vec4.create(); // no ambient
     this.sColor=vec4.create();
   },
-  intensity:function(color,ip){
+  intensity:function(){
     return false;
   }
 });
@@ -105,7 +105,6 @@ Partrace.Lights.Point=Partrace.Light.extend({
 
     // specular
     if (sh>0){
-      var intensity;
       var h = this.h;
       switch(this.shader){
         case 'phong':

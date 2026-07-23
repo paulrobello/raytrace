@@ -71,7 +71,6 @@ Partrace.Scene = Class.extend({
     return a.dist2 - b.dist2;
   },
   itersectScene: function (ray) {
-    var stats = this.stats;
     this.incStats('total', '');
 
     var objects = this.objects;
@@ -86,7 +85,7 @@ Partrace.Scene = Class.extend({
     if (ray.intersections.length > 1) ray.intersections.sort(this.ipSort);
 
     if (ray.intersections.length > 0) {
-      var ip = ray.intersections[0];
+      ip = ray.intersections[0];
       ray.ip = ip;
       ip.ray = ray;
       ip.dist = Math.sqrt(ip.dist2);
@@ -153,8 +152,8 @@ Partrace.Scene = Class.extend({
           var cosI = -vec4.dot(nvec, ray.d);
           var cosT2 = 1 - (n * n) * (1 - (cosI * cosI));
           if (cosT2 > 0) {
-            var rRay = new Partrace.Ray('refract', vec4.clone(ray.p), vec4.clone(ray.d));
-            var rColor = vec4.create();
+            rRay = new Partrace.Ray('refract', vec4.clone(ray.p), vec4.clone(ray.d));
+            rColor = vec4.create();
             vec4.combine(rRay.d, ray.d, nvec, n, n * cosI - Math.sqrt(cosT2));
             vec4.normalize(rRay.d, rRay.d);
             vec4.project(rRay.p, ip.ip, rRay.d, 0.01);
@@ -235,7 +234,7 @@ Partrace.Scene = Class.extend({
     if (json.materials) {
     i = json.materials.length;
     while (i--) {
-      var obj = json.materials[i];
+      obj = json.materials[i];
       if (obj.disabled === true) continue;
 
       var MaterialCtor = Partrace.MATERIAL_TYPES[obj.type];
@@ -243,7 +242,7 @@ Partrace.Scene = Class.extend({
         Partrace.log('Unknown material type: ' + obj.type);
         continue;
       }
-      var newobj = new MaterialCtor();
+      newobj = new MaterialCtor();
       newobj.setPropsFromJson(obj);
       this.add(newobj);
     }
@@ -251,7 +250,7 @@ Partrace.Scene = Class.extend({
     if (json.objects) {
     i = json.objects.length;
     while (i--) {
-      var obj = json.objects[i];
+      obj = json.objects[i];
       if (obj.disabled === true) continue;
 
       var objectFactory = Partrace.OBJECT_TYPES[obj.type];
@@ -259,7 +258,7 @@ Partrace.Scene = Class.extend({
         Partrace.log('Unknown object type: ' + obj.type);
         continue;
       }
-      var newobj = objectFactory(obj);
+      newobj = objectFactory(obj);
       newobj.setPropsFromJson(obj);
       this.add(newobj);
     }

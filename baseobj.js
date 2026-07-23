@@ -289,12 +289,12 @@ export const BaseObj = Class.extend({
     this.rebuildMatrix();
     return this;
   },
-  intersect:function(ray){
+  intersect:function(){
     return false;
-  },   
-  normal:function(ray){
   },
-  uvw:function(ray){
+  normal:function(){
+  },
+  uvw:function(){
   },
   setName:function(v){
     this.name=v||"";
@@ -320,7 +320,7 @@ export const BaseObj = Class.extend({
   },
   // Resolve named scene-graph references against the owning scene after the full
   // scene graph is parsed. No-op by default; overridden where named refs exist.
-  resolveRefs: function (scene) {
+  resolveRefs: function () {
     return this;
   }
 });
