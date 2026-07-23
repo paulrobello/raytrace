@@ -137,12 +137,13 @@ export const Partrace = Class.extend({
 
     setup.width = this.width;
     setup.height = this.height;
-    this.maxWorkers = setup.maxWorkers ? setup.maxWorkers : navigator.hardwareConcurrency || 2;
+    var requested = setup.maxWorkers ? setup.maxWorkers : navigator.hardwareConcurrency || 2;
 
     var workerSetup = Object.assign({}, setup);
 
-    var wy = height / this.maxWorkers;
-    for (var w = 0; w < this.maxWorkers; w++) {
+    var bands = Partrace.partitionRows(height, requested);
+    this.maxWorkers = bands.length;
+    for (var w = 0; w < bands.length; w++) {
       var worker = new Worker(new URL('./partrace-worker.js', import.meta.url), { type: 'module' });
       worker.postMessage = worker.webkitPostMessage || worker.postMessage;
       worker.progress = 0;
@@ -150,9 +151,8 @@ export const Partrace = Class.extend({
       worker.done = false;
       worker.addEventListener('message', this._onMessage, false);
       worker.addEventListener('error', this._onError, false);
-      var sy = wy * w;
-      workerSetup.startY = sy;
-      workerSetup.endY = sy + wy;
+      workerSetup.startY = bands[w].startY;
+      workerSetup.endY = bands[w].endY;
       workerSetup.id = w;
       worker.postMessage({
         action: 'init',
@@ -314,6 +314,24 @@ export const Partrace = Class.extend({
     }
   }
 });
+// Splits `height` scanlines into one contiguous band per worker.
+//
+// Bands MUST be integer-aligned: a posted row is written at byte offset
+// y * width * 4, so a fractional startY shears that band sideways by
+// frac * width pixels and wraps the remainder into the next scanline rather
+// than shifting it vertically. Worker count is clamped to the row count so no
+// worker gets an empty band (which would make its progress fraction NaN).
+Partrace.partitionRows = function (height, workers) {
+  var n = Math.max(1, Math.min(Math.floor(workers), height));
+  var bands = [];
+  for (var w = 0; w < n; w++) {
+    bands.push({
+      startY: Math.round(height * w / n),
+      endY: Math.round(height * (w + 1) / n)
+    });
+  }
+  return bands;
+};
 Partrace.log = function (msg) {
   var line = (typeof msg === 'object') ? JSON.stringify(msg, null, 2) : String(msg);
   console.log(msg);

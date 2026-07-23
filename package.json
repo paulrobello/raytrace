@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node tests/smoke-types.js && node tests/headless-render.js",
+    "test": "node tests/smoke-types.js && node tests/headless-render.js && node tests/row-partition.js",
     "lint": "eslint . --ext .js",
     "fmt": "eslint . --ext .js --fix",
     "checkall": "npm run lint && npm test"

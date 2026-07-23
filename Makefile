@@ -9,6 +9,7 @@ build:
 test:
 	node tests/smoke-types.js
 	node tests/headless-render.js
+	node tests/row-partition.js
 
 lint:
 	npx eslint . --ext .js

@@ -160,11 +160,12 @@ Because ES modules are implicitly strict-mode, `js/class.js` was migrated to an 
 
 The controller partitions the image horizontally:
 
-1. `render(setup)` reads `maxWorkers` (defaulting to `navigator.hardwareConcurrency || 2`) and divides the image height into that many equal row-slices.
-2. It spawns one module worker per slice, assigning each a contiguous `[startY, endY)` range and a unique `id`.
-3. Each worker traces its rows independently — there is no inter-worker communication, only worker→main row postings.
-4. On each `setRow` message the controller copies the row's pixels and depths into its own buffers; on each `progress` message it updates the progress bar and periodically redraws the canvas.
-5. On each worker's `end` message the controller terminates that worker and increments the done count. When all workers are done, it normalizes the z-buffer, computes aggregate stats, logs the render time, and the render is complete.
+1. `render(setup)` reads `maxWorkers` (defaulting to `navigator.hardwareConcurrency || 2`) and passes it to `Partrace.partitionRows(height, workers)`, which divides the image height into that many row-slices.
+2. Slice boundaries are rounded to whole scanlines, so slices differ by at most one row when the height is not evenly divisible by the worker count. This is a correctness requirement, not a rounding nicety: the controller writes a posted row at byte offset `y * width * 4`, so a fractional `startY` shears that slice sideways by `frac * width` pixels and wraps the remainder into the next scanline instead of shifting it vertically. The worker count is also clamped to the row count so no worker receives an empty slice.
+3. It spawns one module worker per slice, assigning each a contiguous `[startY, endY)` range and a unique `id`.
+4. Each worker traces its rows independently — there is no inter-worker communication, only worker→main row postings.
+5. On each `setRow` message the controller copies the row's pixels and depths into its own buffers; on each `progress` message it updates the progress bar and periodically redraws the canvas.
+6. On each worker's `end` message the controller terminates that worker and increments the done count. When all workers are done, it normalizes the z-buffer, computes aggregate stats, logs the render time, and the render is complete.
 
 The static, per-worker `Scene` is set on `Partrace.scene` at construction. This assumes exactly one scene per realm, which holds because each worker renders one independent image.
 
