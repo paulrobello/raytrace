@@ -10,7 +10,6 @@ export const Partrace = Class.extend({
     this.scene = new Partrace.Scene(this);
     this.cBuffer = null;
     this.zBuffer = null;
-    Partrace.scene = this.scene; // used for global lookups
   },
   setPixel: function (x, y, rgba, z) {
     var o = x * 4;

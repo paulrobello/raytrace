@@ -44,6 +44,25 @@ assert.strictEqual(renderer.scene.lights.length, 1, 'point light not registered'
 assert.strictEqual(renderer.scene.materials.length, 5, 'expected all 5 material types registered (basic, checker, checkermat, rainbow, combiner)');
 assert.strictEqual(renderer.scene.objects.length, 2, 'expected sphere + plane registered');
 
+// Audit A8: named material references must resolve via the post-parse linking
+// pass (Scene → resolveRefs), not the removed Partrace.scene singleton. This
+// also guards the latent reverse-iteration bug: parse-time lookup ran before
+// referenced materials were registered, so checkermat/combiner here ended up
+// with null refs under the old code.
+function objectByName(name) {
+  var k = renderer.scene.objects.length;
+  while (k--) if (renderer.scene.objects[k].name === name) return renderer.scene.objects[k];
+  return null;
+}
+var checkermat = renderer.scene.materialByName('m_checkermat');
+assert.ok(checkermat.d1 && checkermat.d1.name === 'm_basic', 'checkermat.diffuse1 did not resolve to m_basic');
+assert.ok(checkermat.d2 && checkermat.d2.name === 'm_checker', 'checkermat.diffuse2 did not resolve to m_checker');
+var combiner = renderer.scene.materialByName('m_combiner');
+assert.ok(combiner.d1 && combiner.d1.name === 'm_checker', 'combiner.diffuse1 did not resolve to m_checker');
+assert.ok(combiner.d2 && combiner.d2.name === 'm_rainbow', 'combiner.diffuse2 did not resolve to m_rainbow');
+assert.ok(objectByName('s').material.name === 'm_basic', 'sphere material did not resolve to m_basic');
+assert.ok(objectByName('p').material.name === 'm_checker', 'plane material did not resolve to m_checker');
+
 // Regression for the latent string-form-vector bug: Partrace.vToVec4 called
 // String.prototype.explode (defined nowhere) on the string branch, so any scene
 // using "r,g,b" vector strings threw. Now uses native split.

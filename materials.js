@@ -162,8 +162,14 @@ Partrace.Materials.CheckerMat = Partrace.Material.extend({
   },
   setPropsFromJson: function (json) {
     this._super(json);
-    if (json.diffuse1) this.setDiffuse1(Partrace.scene.materialByName(json.diffuse1));
-    if (json.diffuse2) this.setDiffuse2(Partrace.scene.materialByName(json.diffuse2));
+    // Defer: named material refs are resolved once all scene materials exist.
+    if (json.diffuse1) this.d1Name = json.diffuse1;
+    if (json.diffuse2) this.d2Name = json.diffuse2;
+    return this;
+  },
+  resolveRefs: function (scene) {
+    if (this.d1Name) this.setDiffuse1(scene.materialByName(this.d1Name));
+    if (this.d2Name) this.setDiffuse2(scene.materialByName(this.d2Name));
     return this;
   }
 });
@@ -190,8 +196,14 @@ Partrace.Materials.Combiner = Partrace.Material.extend({
   },
   setPropsFromJson: function (json) {
     this._super(json);
-    if (json.diffuse1) this.setDiffuse1(Partrace.scene.materialByName(json.diffuse1));
-    if (json.diffuse2) this.setDiffuse2(Partrace.scene.materialByName(json.diffuse2));
+    // Defer: named material refs are resolved once all scene materials exist.
+    if (json.diffuse1) this.d1Name = json.diffuse1;
+    if (json.diffuse2) this.d2Name = json.diffuse2;
+    return this;
+  },
+  resolveRefs: function (scene) {
+    if (this.d1Name) this.setDiffuse1(scene.materialByName(this.d1Name));
+    if (this.d2Name) this.setDiffuse2(scene.materialByName(this.d2Name));
     return this;
   }
 });
@@ -210,6 +222,11 @@ Partrace.Objects.MaterialObj = BaseObj.extend({
   },
   setPropsFromJson: function (json) {
     this._super(json);
-    if (json.material) this.setMaterial(Partrace.scene.materialByName(json.material));
+    // Defer: named material ref is resolved once all scene materials exist.
+    if (json.material) this.materialName = json.material;
+  },
+  resolveRefs: function (scene) {
+    if (this.materialName) this.setMaterial(scene.materialByName(this.materialName));
+    return this;
   }
 });

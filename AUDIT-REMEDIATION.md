@@ -19,7 +19,7 @@
 | 5 — Documentation | ✅ | fix-documentation | D1–D5 + Medium + Low | 8 | 0 | 0 |
 | 6 — Verification | ✅ | orchestrator (inline) | — | — | — | — |
 
-**Overall:** 41 issues resolved, 0 partial, 1 deferred (A8 — see Manual Intervention), 0 skipped.
+**Overall:** 42 issues resolved, 0 partial, 0 deferred, 0 skipped.
 
 **Commits** (on `fix/audit-remediation`):
 - `b5da92f` build: add ESLint gate, Makefile, and headless test harness
@@ -86,10 +86,10 @@ ESLint gate, Makefile (`build`/`test`/`lint`/`fmt`/`typecheck`/`checkall`/`scree
 
 ## Requires Manual Intervention 🔧
 
-### [A8] Hidden singleton coupling: `Partrace.scene` — DEFERRED
-- **Why deferred:** Orthogonal to the module migration; `materials.js` (`CheckerMat`/`Combiner.setPropsFromJson`) resolves named material refs through the realm-global `Partrace.scene.materialByName`. Threading the owning scene through `setPropsFromJson(json, scene)` (or a single post-add linking pass) is a clean, self-contained change better done as its own focused task with its own test than bolted onto the largest phase. The single-scene-per-realm assumption holds today and nothing is broken.
-- **Recommended approach:** Resolve all named material references in one pass at the end of `Scene.setPropsFromJson` (after all materials are added), and pass the scene explicitly to material constructors/setters, removing the global lookup.
-- **Estimated effort:** small–medium.
+### [A8] Hidden singleton coupling: `Partrace.scene` — RESOLVED
+- **Change:** Removed the realm-global `Partrace.scene` singleton (the assignment in `partrace-threaded.js`). Named material references in `CheckerMat`, `Combiner`, and `MaterialObj` are now stored as raw name strings during `setPropsFromJson`, then resolved in a single linking pass at the end of `Scene.setPropsFromJson`, which calls a new `resolveRefs(scene)` hook (no-op on `BaseObj`, overridden where named refs exist) over every material and object once the full scene graph is registered.
+- **Side fix:** The old parse-time lookup ran during reverse-order `i--` parsing, so a referrer that preceded its referent in the JSON array silently received a null reference (forward-reference bug). The post-parse pass resolves forward references correctly — verified by new `smoke-types` assertions on `m_checkermat`/`m_combiner`, whose refs were null under the old code.
+- **No behavioral change to the default scene:** its `checkermat` refs already resolved under the old favorable ordering, so decoupling them is output-identical — the screenshot baseline holds at 977,513 rays.
 
 ### Browser-runtime verification gap — RECOMMENDED FOLLOW-UP
 - **Why:** The Node harness + module-graph resolution checks verify the **worker render chain** (the majority of the code) and prove the import graph is a sound DAG. They do **not** exercise the browser's `<script type="module">` load, the module-Worker spawn, or CSP enforcement (no chromium available in this environment). The migration uses only standard, well-trodden module mechanics and the graph is proven to resolve, so risk is low — but headless browser confidence would be higher.
@@ -127,7 +127,7 @@ ESLint gate, Makefile (`build`/`test`/`lint`/`fmt`/`typecheck`/`checkall`/`scree
 
 ## Next Steps
 
-1. **Review** the `Requires Manual Intervention` items: decide whether to schedule **A8** (scene injection) and the **Playwright browser smoke test**.
-2. **Merge** `fix/audit-remediation` to `main` after review (5 commits; each phase is an independent rollback point).
-3. **Re-run `/audit`** to regenerate `AUDIT.md` against the remediated state (expected: the verified bugs and tooling/documentation gaps cleared; A8 likely the only remaining Medium architecture item).
+1. **Review** the remaining `Requires Manual Intervention` item: the **Playwright browser smoke test** (A8 scene injection is now resolved).
+2. **Merge** `fix/audit-remediation` to `main` after review (each phase is an independent rollback point).
+3. **Re-run `/audit`** to regenerate `AUDIT.md` against the remediated state (expected: the verified bugs and tooling/documentation gaps cleared; no remaining Medium architecture items).
 4. *(Optional)* tighten the ESLint `no-undef`/`no-unused-vars` rules from `warn` to `error` now that the codebase is module-structured — left at `warn` during remediation so the gate stayed green on the legacy style.

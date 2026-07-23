@@ -264,5 +264,18 @@ Partrace.Scene = Class.extend({
       this.add(newobj);
     }
     }
+
+    // Resolve named material references now that every material and object is
+    // registered, instead of through the Partrace.scene singleton. Running after
+    // all adds also satisfies forward references the old parse-time lookup could
+    // not (a referrer preceding its referent in the JSON array).
+    var mi = this.materials.length;
+    while (mi--) {
+      this.materials[mi].resolveRefs(this);
+    }
+    var oi = this.objects.length;
+    while (oi--) {
+      this.objects[oi].resolveRefs(this);
+    }
   }
 });

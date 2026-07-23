@@ -317,5 +317,10 @@ export const BaseObj = Class.extend({
     }
     if (json.castShadows)    this.setCastShadows(Partrace.vToBool(json.castShadows));
     if (json.receiveShadows) this.setReceiveShadows(Partrace.vToBool(json.receiveShadows));
+  },
+  // Resolve named scene-graph references against the owning scene after the full
+  // scene graph is parsed. No-op by default; overridden where named refs exist.
+  resolveRefs: function (scene) {
+    return this;
   }
 });
