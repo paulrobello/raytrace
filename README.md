@@ -1,5 +1,7 @@
 # PARTrace
 
+**🌐 Live demo: <https://raytrace.pardev.net>** — runs entirely in the browser, no GPU.
+
 PARTrace is a pure-CPU JavaScript ray tracer. There is no WebGL or GPU path — every pixel is computed by tracing rays through a scene graph in JavaScript, spread across a pool of Web Workers (one row-slice per CPU core) for parallel rendering. Scenes are data-driven: you edit the scene as JSON in a textarea on the page and click **Render**. It supports reflections, refraction (with Beer's-law absorption), hard and soft shadows, Phong and Blinn-Phong shading, checker/rainbow/combiner materials, depth-of-field, anti-aliasing, and fog.
 
 ![PARTrace](images/screenshot.png)
@@ -97,6 +99,10 @@ make serve        # serve over HTTP on :8000
 `make checkall` is the gate: it runs ESLint, a smoke test that instantiates every registered scene type from its JSON name, and a headless render. `make screenshot` renders the default scene in Node and writes `images/screenshot.png`.
 
 There is no build step and no type system — the JavaScript is served as-is.
+
+## Deployment
+
+The site is published to GitHub Pages at **<https://raytrace.pardev.net>** automatically by [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) on every push to `main`. The custom domain is configured via the repo-root [`CNAME`](CNAME) file. There is no build step, so the deploy simply uploads the repo root as a static site.
 
 ## License
 
