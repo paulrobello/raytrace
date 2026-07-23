@@ -1,4 +1,10 @@
-Partrace = Class.extend({
+// MAIN-THREAD controller (jQuery + canvas + Worker pool). A separate worker-realm
+// renderer also named Partrace lives in partrace-threaded.js; they are
+// realm-separated by the Worker boundary (audit A2).
+import { Class } from './js/class.js';
+import { vec4 } from './js/vecmath.js';
+
+export const Partrace = Class.extend({
   init: function (canvas) {
     this.element = document.getElementById(canvas);
     this.width = this.element.width;
@@ -124,7 +130,7 @@ Partrace = Class.extend({
 
     var wy = height / this.maxWorkers;
     for (var w = 0; w < this.maxWorkers; w++) {
-      var worker = new Worker('partrace-worker.js');
+      var worker = new Worker('/partrace-worker.js', { type: 'module' });
       worker.postMessage = worker.webkitPostMessage || worker.postMessage;
       worker.progress = 0;
       worker.stats = {};

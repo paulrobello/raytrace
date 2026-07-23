@@ -1,3 +1,7 @@
+import { Class } from './js/class.js';
+import { vec4 } from './js/vecmath.js';
+import { Partrace } from './partrace-threaded.js';
+
 Partrace.Fog = Class.extend({
   init: function (scene, color, type) {
     this.scene = scene;

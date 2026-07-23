@@ -8,29 +8,12 @@
   },
   "parserOptions": {
     "ecmaVersion": 2022,
-    "sourceType": "script"
+    "sourceType": "module"
   },
   "globals": {
-    "Partrace": "writable",
-    "BaseObj": "writable",
-    "Class": "readonly",
-    "glMatrix": "readonly",
-    "vec2": "readonly",
-    "vec3": "readonly",
-    "vec4": "readonly",
-    "mat2": "readonly",
-    "mat3": "readonly",
-    "mat4": "readonly",
-    "quat": "readonly",
-    "importScripts": "readonly",
-    "postMessage": "readonly",
-    "self": "readonly",
     "$": "readonly",
-    "FormatJSON": "readonly",
-    "SortObject": "readonly",
-    "RealTypeOf": "readonly",
-    "logIt": "readonly",
-    "logJSON": "readonly"
+    "postMessage": "readonly",
+    "self": "readonly"
   },
   "rules": {
     "no-dupe-keys": "error",

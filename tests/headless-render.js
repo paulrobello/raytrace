@@ -12,8 +12,8 @@
  * multi-light shading loop in scene.raytrace — the C1 regression surface —
  * actually runs end to end.
  */
-const assert = require('assert');
-const { createWorkerScope } = require('./loader');
+import assert from 'assert';
+import { createWorkerScope } from './loader.js';
 
 const SCENE = {
   width: 120,
@@ -47,10 +47,9 @@ const SCENE = {
   }
 };
 
-const { scope, messages } = createWorkerScope();
-const Partrace = scope.Partrace;
+const { Partrace, messages } = createWorkerScope();
 
-const renderer = new Partrace(scope);
+const renderer = new Partrace();
 renderer.setPropsFromJson(SCENE);
 
 let threw = null;

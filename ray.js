@@ -1,3 +1,7 @@
+import { BaseObj } from './baseobj.js';
+import { vec4 } from './js/vecmath.js';
+import { Partrace } from './partrace-threaded.js';
+
 Partrace.Ray=BaseObj.extend({
   init:function(type,p,d){
     this.type = type||'unknown';

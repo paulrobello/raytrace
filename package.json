@@ -2,6 +2,7 @@
   "name": "partrace",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "PARTrace JS — a JavaScript ray tracer with a row-partitioned Web Worker render pool.",
   "scripts": {
     "test": "node tests/smoke-types.js && node tests/headless-render.js",

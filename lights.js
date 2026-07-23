@@ -1,3 +1,7 @@
+import { BaseObj } from './baseobj.js';
+import { vec4 } from './js/vecmath.js';
+import { Partrace } from './partrace-threaded.js';
+
 Partrace.Light=BaseObj.extend({
   init: function(partrace,parent){
     this._super(parent);
@@ -114,6 +118,7 @@ Partrace.Lights.Point=Partrace.Light.extend({
       vec4.scale(sl,sl,intensity); // scale the specular dot by shine level
     } // end specular
 
+    var att;
     switch (this.attenuationType){
       case 'none':att=1; break;
       case 'linear':att=Math.saturate(1-(dist/this.fallOffRadius)); break;

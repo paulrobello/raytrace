@@ -8,8 +8,8 @@
  * hand-typed factory switch that lint and tests never touched. If any
  * registered type fails to construct, this test fails.
  */
-const assert = require('assert');
-const { createWorkerScope } = require('./loader');
+import assert from 'assert';
+import { createWorkerScope } from './loader.js';
 
 const SCENE = {
   bg_color: [0, 0, 0],
@@ -30,10 +30,9 @@ const SCENE = {
   ]
 };
 
-const { scope } = createWorkerScope();
-const Partrace = scope.Partrace;
+const { Partrace } = createWorkerScope();
 
-const renderer = new Partrace(scope);
+const renderer = new Partrace();
 renderer.id = 0;
 renderer.width = 8;
 renderer.height = 8;

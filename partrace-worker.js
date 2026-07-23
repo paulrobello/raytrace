@@ -1,27 +1,20 @@
-self.onmessage=function(event){
-  importScripts(
-    "/js/gl-matrix-min.js",
-    "/js/gl-matrix-globals.js",
-    "/js/class.js",
-    "/js/par.js",
-    "/utils.js",
+// Module worker entry. Browsers load via `new Worker('partrace-worker.js', {type:'module'})`.
+//
+// Importing Partrace plus the registry attaches every scene-graph class to the
+// shared namespace and builds the JSON type registries (audit A1) as side
+// effects. The render path runs only after this module has fully evaluated, so
+// every Partrace.* reference resolves.
+//
+// In a browser module worker `self` is the worker global scope. Node — used by
+// the graph-resolution and headless-render tests — has no `self`, so the worker
+// global is resolved defensively without changing browser behavior.
+import { Partrace } from './partrace-threaded.js';
+import './js/registry.js';
 
-    "/parmath.js",
-    "/partrace-threaded.js",
+var workerScope = (typeof self !== 'undefined') ? self : globalThis;
 
-    "/scene.js",
-    "/fog.js",
-    "/baseobj.js",
-
-    "/ray.js",
-    "/camera.js",
-    "/lights.js",
-    "/materials.js",
-    "/objects.js"
-
-  );
-
-  var partrace = new Partrace(this);
+workerScope.onmessage = function (event) {
+  var partrace = new Partrace(workerScope);
   partrace.setPropsFromJson(event.data.setup);
   partrace.render();
 };

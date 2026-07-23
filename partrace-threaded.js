@@ -1,4 +1,9 @@
-Partrace = Class.extend({
+// WORKER REALM renderer. A separate main-thread controller also named Partrace
+// lives in partrace.js; they are realm-separated by the Worker boundary (audit A2).
+import { Class } from './js/class.js';
+import { vec4 } from './js/vecmath.js';
+
+export const Partrace = Class.extend({
   init: function (worker) {
     this.worker = worker || null;
     this.camera = new Partrace.Camera(this);

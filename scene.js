@@ -1,3 +1,7 @@
+import { Class } from './js/class.js';
+import { vec4 } from './js/vecmath.js';
+import { Partrace } from './partrace-threaded.js';
+
 Partrace.Scene = Class.extend({
   init: function (partrace) {
     this.partrace = partrace;
@@ -218,19 +222,14 @@ Partrace.Scene = Class.extend({
         var obj = json.lights[i];
         if (obj.disabled === true) continue;
 
-        var newobj = null;
-
-        switch (obj.type) {
-        case 'point':
-          newobj = new Partrace.Lights.Point();
-          break;
-        default:
+        var LightCtor = Partrace.LIGHT_TYPES[obj.type];
+        if (!LightCtor) {
           Partrace.log('Unknown light type: ' + obj.type);
+          continue;
         }
-        if (newobj) {
-          newobj.setPropsFromJson(obj);
-          this.add(newobj);
-        }
+        var newobj = new LightCtor();
+        newobj.setPropsFromJson(obj);
+        this.add(newobj);
       }
     }
     if (json.materials) {
@@ -238,31 +237,15 @@ Partrace.Scene = Class.extend({
     while (i--) {
       var obj = json.materials[i];
       if (obj.disabled === true) continue;
-      var newobj = null;
 
-      switch (obj.type) {
-      case 'basic':
-        newobj = new Partrace.Material();
-        break;
-      case 'checker':
-        newobj = new Partrace.Materials.Checker();
-        break;
-      case 'checkermat':
-        newobj = new Partrace.Materials.CheckerMat();
-        break;
-      case 'rainbow':
-        newobj = new Partrace.Materials.Rainbow();
-        break;
-      case 'combiner':
-        newobj = new Partrace.Materials.Combiner();
-        break;
-      default:
+      var MaterialCtor = Partrace.MATERIAL_TYPES[obj.type];
+      if (!MaterialCtor) {
         Partrace.log('Unknown material type: ' + obj.type);
+        continue;
       }
-      if (newobj) {
-        newobj.setPropsFromJson(obj);
-        this.add(newobj);
-      }
+      var newobj = new MaterialCtor();
+      newobj.setPropsFromJson(obj);
+      this.add(newobj);
     }
     }
     if (json.objects) {
@@ -270,22 +253,15 @@ Partrace.Scene = Class.extend({
     while (i--) {
       var obj = json.objects[i];
       if (obj.disabled === true) continue;
-      var newobj = null;
 
-      switch (obj.type) {
-      case 'sphere':
-        newobj = new Partrace.Objects.Sphere(null, obj.radius);
-        break;
-      case 'plane':
-        newobj = new Partrace.Objects.Plane(null, obj.width, obj.height);
-        break;
-      default:
+      var objectFactory = Partrace.OBJECT_TYPES[obj.type];
+      if (!objectFactory) {
         Partrace.log('Unknown object type: ' + obj.type);
+        continue;
       }
-      if (newobj) {
-        newobj.setPropsFromJson(obj);
-        this.add(newobj);
-      }
+      var newobj = objectFactory(obj);
+      newobj.setPropsFromJson(obj);
+      this.add(newobj);
     }
     }
   }

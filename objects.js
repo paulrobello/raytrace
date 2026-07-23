@@ -1,3 +1,6 @@
+import { vec4 } from './js/vecmath.js';
+import { Partrace } from './partrace-threaded.js';
+
 Partrace.Objects.Sphere=Partrace.Objects.MaterialObj.extend({
   init:function(parent,radius,material){
     this._super(parent,material);

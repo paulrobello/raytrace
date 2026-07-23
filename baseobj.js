@@ -1,4 +1,8 @@
-var BaseObj = Class.extend({
+import { Class } from './js/class.js';
+import { vec4, mat4 } from './js/vecmath.js';
+import { Partrace } from './partrace-threaded.js';
+
+export const BaseObj = Class.extend({
   init: function(parent){
     this.parent=parent||null;
     this.up=vec4.create();
