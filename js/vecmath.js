@@ -45,6 +45,7 @@ Math.sqr = Math.sqr || function (v) { return v * v; };
 // ---- vec4 extensions ----
 vec4.norm = vec4.squaredLength;
 
+// out = a*f1 + b*f2, component-wise linear blend of two vectors.
 vec4.combine = function (out, a, b, f1, f2) {
   if (out === undefined) out = vec4.create();
   out[0] = a[0] * f1 + b[0] * f2;
@@ -53,6 +54,7 @@ vec4.combine = function (out, a, b, f1, f2) {
   out[3] = a[3] * f1 + b[3] * f2;
   return out;
 };
+// out = p + d*t: advance point p along direction d by parameter t (used to offset ray origins off a surface).
 vec4.project = function (out, p, d, t) {
   if (out === undefined) out = vec4.create();
   out[0] = p[0] + d[0] * t;
@@ -61,6 +63,7 @@ vec4.project = function (out, p, d, t) {
   out[3] = p[3] + d[3] * t;
   return out;
 };
+// Geometric 3D cross product a × b; w forced to 0 (result is a direction, not a point).
 vec4.crossProduct = function (out, a, b) {
   if (out === undefined) out = vec4.create();
   out[0] = a[1] * b[2] - a[2] * b[1];
@@ -70,6 +73,7 @@ vec4.crossProduct = function (out, a, b) {
   return out;
 };
 vec4.cross = vec4.crossProduct;
+// Reflect v about unit normal n: out = v − 2(v·n)n, realized as project(v, n, −2(v·n)).
 vec4.reflect = function (out, v, n) {
   if (out === undefined) out = vec4.create();
   var vdotn = -2 * vec4.dot(v, n);
@@ -148,6 +152,7 @@ mat4.setW = function (out, v) {
   out[12] = v[0]; out[13] = v[1]; out[14] = v[2]; out[15] = v[3];
   return out;
 };
+// Rodrigues rotation matrix: rotate by `rad` radians about `axis` (normalized in place); translation row is zero (pure rotation).
 mat4.createRotate = function (out, rad, axis) {
   if (out === undefined) out = mat4.create();
   vec4.normalize(axis, axis);
@@ -173,6 +178,7 @@ mat4.equals = function (a, b) {
     a[8] === b[8] && a[9] === b[9] && a[10] === b[10] && a[11] === b[11] &&
     a[12] === b[12] && a[13] === b[13] && a[14] === b[14] && a[15] === b[15];
 };
+// Fast inverse for a rigid rotation + uniform-scale + translation matrix: transpose the 3×3, multiply by 1/uniformScale, and negate the translated origin. Returns identity when scale ≈ 0.
 mat4.anglePreservingMatrixInvert = function (mat) {
   var out = mat4.create();
   var scale = vec4.norm(mat4.getX(undefined, mat));

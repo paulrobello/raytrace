@@ -1,4 +1,4 @@
-.PHONY: install build test lint fmt typecheck checkall clean
+.PHONY: install build test lint fmt typecheck checkall clean screenshot serve
 
 install:
 	npm install
@@ -24,3 +24,10 @@ checkall: lint test
 
 clean:
 	rm -rf node_modules
+
+screenshot:
+	node tests/render-screenshot.js
+
+serve:
+	@echo "serving on http://localhost:8000 (ES module workers require HTTP, not file://)"
+	python3 -m http.server 8000

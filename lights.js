@@ -31,6 +31,16 @@ Partrace.Lights.Point=Partrace.Light.extend({
     this.shader='blinn';
     this.intensity=this.intensityBlinnPhong;
   },
+  // Direct-illumination shading (ambient + diffuse + specular) with shadow and
+  // distance attenuation. The specular model is selected by `this.shader`:
+  //   'phong'  — intensity = (R · V)^shiny, where R = reflect(L, N) is the light
+  //              vector reflected about the surface normal and V is the view
+  //              vector (−ray.d).
+  //   'blinn'  — intensity = (N · H)^shiny, where H = normalize(L + V) is the
+  //              Blinn half vector (L = unit vector toward the light).
+  // Shadows: when scene.doShadows, this light casts, and the surface receives
+  // them, a shadow ray is traced toward the light; a translucent occluder tints
+  // the diffuse term by its transmitted color instead of blocking fully.
   intensityBlinnPhong:function(color,ip){
     if (ip.object instanceof Partrace.Light){
       vec4.copy(color,this.kd);

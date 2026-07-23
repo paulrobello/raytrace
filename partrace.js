@@ -148,6 +148,35 @@ export const Partrace = Class.extend({
       this.workers.push(worker);
     }
   },
+  // Worker message protocol reference (audit D4). The main thread and the worker
+  // realm (partrace-threaded.js) communicate ONLY by postMessage. See the
+  // matching summary in docs/ARCHITECTURE.md.
+  //
+  // Main -> Worker (sent once, immediately after spawn, from render() above):
+  //   { action: 'init',
+  //     setup: { id, width, height, startY, endY,      // this worker's row-slice
+  //              maxWorkers, antiAlias, aaThreshold,    // render config
+  //              doReflect, doRefract, doShadows,
+  //              scene: { bg_color, camera, fog, lights[], materials[], objects[] } } }
+  //
+  // Worker -> Main (every message carries a `status` tag, dispatched below):
+  //   'start'    { id }                          posted once at the start of render()
+  //   'setRow'   { id, x:0, y, cData, zData }    posted at the end of every scan row;
+  //                                              cData = Uint8ClampedArray(width*4) RGBA,
+  //                                              zData = Float32Array(width) depths
+  //   'progress' { id, progress }                0-100 integer for this worker's slice,
+  //                                              posted every other row
+  //   'stats'    { id, stats }                   posted once near render end; the worker's
+  //                                              Scene.stats object (ray counts, render time)
+  //   'log'      { msg }                         forwarded worker-side Partrace.log output
+  //   'end'      { id }                          final message; we terminate the worker here
+  //   'setPixel' { parms:{x,y,r,g,b,a} }        legacy per-pixel path, STILL HANDLED below but
+  //                                              not emitted by the current worker (it posts
+  //                                              whole rows via 'setRow')
+  //
+  // Error path: a worker throw fires onError (below), which terminates the failing
+  // worker, marks it done, and aborts the render once all workers have settled
+  // (audit C4) — so a single worker crash no longer leaves the progress bar hung.
   onMessage: function (evt) {
     var data = evt.data;
     var cData, zData;
