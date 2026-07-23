@@ -48,7 +48,7 @@ The scene is plain JSON with `#`-prefixed comment lines (stripped before `JSON.p
   "maxWorkers": 0,
   "width": 800,
   "height": 600,
-  "antiAlias": 0,
+  "antiAlias": 1,
   "doReflect": true,
   "doRefract": true,
   "doShadows": true,

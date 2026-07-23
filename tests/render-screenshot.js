@@ -20,8 +20,11 @@ const setup = JSON.parse(DEFAULT_SCENE.replace(/#.*$/gm, ''));
 
 const W = Number(process.env.PARTRACE_SS_W || setup.width || 800);
 const H = Number(process.env.PARTRACE_SS_H || setup.height || 600);
-// Fixed default so the image is deterministic, and 600/16 = 37.5 exercises a
-// non-integer naive split — the case that used to shear alternating bands.
+// Fixed worker count rather than hardwareConcurrency, so the partition is the
+// same on every machine and 600/16 = 37.5 exercises a non-integer naive split —
+// the case that used to shear alternating bands. The image itself is NOT
+// bit-reproducible: the default scene enables antiAlias, and the supersample
+// offsets are jittered with Math.random().
 const WORKERS = Number(process.env.PARTRACE_SS_WORKERS || setup.maxWorkers || 16);
 setup.width = W;
 setup.height = H;

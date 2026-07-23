@@ -9,7 +9,7 @@ export const DEFAULT_SCENE = `# lines starting with # are comments
   "width":800,
   "height":600,
   # 0 = off, 1=3x3, 2=5x5
-  "antiAlias":0,
+  "antiAlias":1,
   # 0=disable adaptive aa
   "aaThreshold":0.001,
   "doReflect":true,
